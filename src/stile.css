@@ -1,0 +1,1832 @@
+/* =========================================================
+   Tema dell'app: sempre scuro, minimalista.
+   Tutti i colori e le misure stanno qui: per cambiare l'aspetto
+   basta modificare queste variabili.
+   ========================================================= */
+:root {
+  --sfondo: #0b0d10;          /* fondo dell'app */
+  --superficie: #14171c;      /* riquadri e campi */
+  --superficie-alta: #1d2128; /* elementi premuti o in evidenza */
+  --bordo: #242931;           /* linee sottili */
+  --testo: #eceef1;           /* testo principale */
+  --testo-tenue: #8b939e;     /* testo secondario */
+  --testo-spento: #59616b;    /* suggerimenti (es. valori dell'ultima volta) */
+  --accento: #3b86f0;         /* unico colore d'accento: blu (azioni, stato attivo, ✓) */
+  --accento-tenue: rgba(59, 134, 240, 0.14); /* sfondo leggero per evidenziare */
+  --su-accento: #ffffff;      /* testo sopra l'accento */
+  --errore: #e5867a;
+  /* Leggera luce dall'alto sui riquadri: dà profondità senza appesantire. */
+  --luce: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 70%);
+
+  --raggio: 16px;
+  --spazio: 16px;
+  --tocco: 48px;              /* altezza minima di pulsanti e campi */
+  --altezza-nav: 64px;
+
+  color-scheme: dark;
+  /* Inter è incluso nell'app; se non si carica si usa il font di sistema. */
+  font-family: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'cv11', 'ss03'; /* forme di Inter più pulite (a, 1, 4, 6, 9) */
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--testo);
+  background: var(--sfondo);
+  -webkit-text-size-adjust: 100%;
+  /* Cifre a larghezza fissa: kg e ripetizioni restano allineati in colonna. */
+  font-variant-numeric: tabular-nums;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--sfondo);
+  /* Niente "rimbalzo" dello schermo e niente riquadro grigio al tocco. */
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation; /* tocchi immediati, senza zoom col doppio tap */
+}
+
+/* Contenuto: lascia spazio al notch in alto e alla barra in basso. */
+.contenuto {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 20px) calc(env(safe-area-inset-right) + var(--spazio))
+    calc(env(safe-area-inset-bottom) + var(--altezza-nav) + 24px)
+    calc(env(safe-area-inset-left) + var(--spazio));
+}
+
+/* Ogni cambio di schermata compare con una breve dissolvenza. */
+.pagina {
+  animation: entrata 0.22s ease-out;
+}
+@keyframes entrata {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.titolo-pagina {
+  margin: 8px 0 20px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.sopratitolo {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--testo-tenue);
+}
+.sopratitolo::first-letter {
+  text-transform: uppercase;
+}
+.sopratitolo + .titolo-pagina {
+  margin-top: 0;
+}
+
+.riquadro {
+  background: var(--luce), var(--superficie);
+  border: 1px solid var(--bordo);
+  border-radius: var(--raggio);
+  padding: var(--spazio);
+}
+
+.riquadro.vuoto p {
+  margin: 0;
+  color: var(--testo-tenue);
+}
+
+.etichetta {
+  margin-top: 12px !important;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--testo-spento) !important;
+}
+
+/* ---------- Barra di navigazione in basso ---------- */
+.barra-nav {
+  position: fixed;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: rgba(11, 13, 16, 0.85);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-top: 1px solid var(--bordo);
+}
+
+.voce-nav {
+  flex: 1;
+  max-width: 128px;
+  height: var(--altezza-nav);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  color: var(--testo-spento);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: color 0.15s;
+}
+
+/* L'icona sta in una "pillola" che si colora quando la sezione è attiva. */
+.voce-nav svg {
+  width: 56px;
+  height: 30px;
+  padding: 3px 16px;
+  border-radius: 999px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: background-color 0.2s;
+}
+
+.voce-nav[aria-current='page'] {
+  color: var(--testo);
+  font-weight: 600;
+}
+.voce-nav[aria-current='page'] svg {
+  color: var(--accento);
+  background: var(--accento-tenue);
+  stroke-width: 1.9;
+}
+
+.voce-nav:active {
+  color: var(--testo);
+}
+
+@media (hover: hover) {
+  .voce-nav:hover {
+    color: var(--testo-tenue);
+  }
+  .voce-nav[aria-current='page']:hover {
+    color: var(--testo);
+  }
+}
+
+/* ---------- Testi di servizio ---------- */
+.testo-tenue {
+  color: var(--testo-tenue);
+}
+.piccolo {
+  font-size: 13px;
+}
+.centrato {
+  text-align: center;
+}
+.errore {
+  margin: 0;
+  color: var(--errore);
+  font-size: 14px;
+}
+
+/* ---------- Pulsanti ---------- */
+.pulsante {
+  min-height: var(--tocco);
+  padding: 0 20px;
+  border: 1px solid var(--bordo);
+  border-radius: 12px;
+  background: var(--superficie);
+  font-weight: 600;
+}
+.pulsante:active {
+  background: var(--superficie-alta);
+}
+.pulsante.primario {
+  background: var(--accento);
+  border-color: var(--accento);
+  color: var(--su-accento);
+}
+.pulsante.pericolo {
+  background: var(--errore);
+  border-color: var(--errore);
+  color: var(--su-accento);
+}
+.pulsante.pericolo-tenue {
+  color: var(--errore);
+  background: none;
+}
+.pulsante.largo {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.pulsante-icona {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--testo-tenue);
+}
+.pulsante-icona svg,
+.pulsante-indietro svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pulsante-icona:active {
+  background: var(--superficie-alta);
+}
+.pulsante-icona:disabled {
+  opacity: 0.25;
+}
+
+.pulsante-testo {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--testo-tenue);
+  font-size: 14px;
+  font-weight: 600;
+}
+.pulsante-testo.pericolo {
+  color: var(--errore);
+}
+
+.pulsante-indietro {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  margin: -4px 0 8px -8px;
+  padding: 0 8px 0 0;
+  border: 0;
+  background: none;
+  color: var(--testo-tenue);
+  font-weight: 500;
+}
+
+.fila-pulsanti {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.fila-pulsanti > * {
+  flex: 1;
+}
+
+/* ---------- Campi ---------- */
+/* 16px minimo: sotto questa misura l'iPhone ingrandisce la pagina al tocco. */
+.campo {
+  width: 100%;
+  min-height: var(--tocco);
+  padding: 0 14px;
+  border: 1px solid var(--bordo);
+  border-radius: 12px;
+  background: var(--sfondo);
+  font-size: 16px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.campo::placeholder {
+  color: var(--testo-spento);
+}
+.campo:focus {
+  border-color: var(--testo-tenue);
+}
+
+.titolo-campo {
+  margin-bottom: 6px;
+  padding: 0 12px;
+  background: none;
+  border-color: transparent;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin-left: -12px;
+  width: calc(100% + 12px);
+}
+
+.campo-etichettato {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.campo-etichettato > span {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--testo-spento);
+}
+.campo-etichettato p {
+  margin: 0;
+}
+
+/* Contatore − n + */
+.contatore {
+  display: flex;
+  align-items: center;
+  height: var(--tocco);
+  border: 1px solid var(--bordo);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.contatore button {
+  width: 48px;
+  height: 100%;
+  border: 0;
+  background: none;
+  font-size: 22px;
+  color: var(--testo-tenue);
+}
+.contatore button:active {
+  background: var(--superficie-alta);
+}
+.contatore button:disabled {
+  opacity: 0.25;
+}
+.contatore output {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Scelta tra opzioni affiancate */
+.segmenti {
+  display: flex;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--sfondo);
+  border: 1px solid var(--bordo);
+}
+.segmenti button {
+  flex: 1;
+  min-height: 42px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--testo-tenue);
+  font-size: 14px;
+  font-weight: 600;
+}
+.segmenti button[aria-checked='true'] {
+  background: var(--superficie-alta);
+  color: var(--testo);
+}
+
+/* Interruttore sì/no */
+.interruttore {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--tocco);
+}
+.interruttore input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accento);
+}
+.interruttore span {
+  display: flex;
+  flex-direction: column;
+}
+.interruttore small {
+  font-size: 13px;
+}
+
+.modulo {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ---------- Finestre ---------- */
+.velo {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  animation: comparsa 0.15s ease-out;
+}
+.finestra {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--superficie);
+  border: 1px solid var(--bordo);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  animation: salita 0.2s ease-out;
+}
+.finestra-testa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 8px 4px 20px;
+}
+.finestra-testa h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+}
+.finestra-corpo {
+  overflow-y: auto;
+  padding: 8px 20px calc(env(safe-area-inset-bottom) + 20px);
+}
+.finestra-corpo > p {
+  margin-top: 0;
+}
+@media (min-width: 600px) {
+  .velo {
+    align-items: center;
+  }
+  .finestra {
+    border-radius: 20px;
+    border-bottom: 1px solid var(--bordo);
+  }
+}
+@keyframes comparsa {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes salita {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+/* Elenco esercizi nella finestra di scelta: altezza fissa, così la
+   finestra non "salta" mentre si scrive nella ricerca. */
+.finestra:has(.elenco-scelta) {
+  height: 88dvh;
+}
+.elenco-scelta {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.elenco-scelta li {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--bordo);
+}
+.voce-scelta {
+  flex: 1;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+.voce-scelta.crea {
+  color: var(--accento);
+  font-weight: 600;
+}
+
+/* ---------- Schede ---------- */
+.elenco-schede,
+.elenco-voci {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.scheda {
+  display: flex;
+  align-items: center;
+  padding: 0 4px 0 0;
+}
+.scheda-apri {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+.scheda-nome {
+  font-size: 18px;
+  font-weight: 650;
+}
+.scheda-riassunto {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--testo-spento);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.scheda-ordine {
+  display: flex;
+  flex-direction: column;
+}
+
+.elenco-voci {
+  margin-top: 16px;
+}
+.voce {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 12px 4px 16px;
+}
+.voce-testa {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.voce-numero {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-top: 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--superficie-alta);
+  color: var(--testo-tenue);
+  font-size: 13px;
+  font-weight: 600;
+}
+.voce-nome {
+  flex: 1;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: left;
+  font-size: 17px;
+  font-weight: 600;
+}
+.voce-nome .piccolo {
+  font-weight: 400;
+}
+.voce > .pulsante-testo {
+  align-self: flex-start;
+  min-height: 32px;
+  margin-top: -8px;
+  padding-left: 38px;
+}
+.voce-alternativa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -8px;
+  padding-left: 38px;
+  font-size: 15px;
+}
+.voce-alternativa .pulsante-testo {
+  min-height: 32px;
+}
+.voce-campi {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.voce-azioni {
+  display: flex;
+  align-items: center;
+  margin-left: -8px;
+}
+.voce-azioni .pericolo {
+  margin-left: auto;
+}
+
+.pulsante:disabled,
+.pulsante-testo:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.campo.area {
+  min-height: 88px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+.etichetta-sopra {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--testo-tenue);
+}
+
+/* ---------- Allenati: scelta della scheda ---------- */
+.scheda-avvio,
+.in-corso {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.scheda-avvio > div,
+.in-corso > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.in-corso {
+  margin-bottom: 16px;
+  border-color: var(--accento);
+}
+.scheda-avvio.prossima {
+  border-color: var(--testo-spento);
+}
+
+/* ---------- Allenamento in corso ---------- */
+/* Testata fissa in alto: nome, durata, volume e "Termina" sempre a portata. */
+.testata-allenamento {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: calc(-20px - env(safe-area-inset-top)) calc(-1 * var(--spazio)) 12px;
+  padding: calc(env(safe-area-inset-top) + 12px) var(--spazio) 12px;
+  background: rgba(13, 15, 18, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--bordo);
+}
+.testata-allenamento h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.testata-allenamento p {
+  margin: 2px 0 0;
+}
+
+.riscaldamento {
+  padding: 0 var(--spazio);
+}
+
+.elenco-esercizi {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.esercizio {
+  scroll-margin-top: 90px; /* non finire sotto la testata fissa */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 12px 4px;
+}
+.esercizio-testa {
+  padding: 0 4px;
+}
+.esercizio-testa h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+}
+.esercizio-testa p {
+  margin: 2px 0 0;
+}
+.ultima-volta {
+  margin-top: 6px !important;
+  font-size: 14px;
+  color: var(--testo);
+  opacity: 0.8;
+}
+.esercizio-testa .pulsante-testo {
+  min-height: 36px;
+  padding: 0;
+}
+
+/* Griglia delle serie: numero | kg | rip | ✓ */
+.tabella-serie {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.riga-serie {
+  display: grid;
+  grid-template-columns: 36px 1fr 1fr 52px;
+  align-items: center;
+  gap: 8px;
+}
+.senza-kg .riga-serie {
+  grid-template-columns: 36px 1fr 52px;
+}
+.riga-serie.intestazione {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--testo-spento);
+}
+.riga-serie.intestazione span:first-child {
+  text-align: center;
+}
+.riga-serie .campo {
+  min-height: 52px;
+  text-align: center;
+  font-size: 19px;
+  font-weight: 600;
+  padding: 0 6px;
+}
+.riga-serie .campo::placeholder {
+  font-weight: 500;
+}
+.numero-serie {
+  text-align: center;
+  font-weight: 600;
+  color: var(--testo-tenue);
+}
+.spunta {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--bordo);
+  border-radius: 12px;
+  background: var(--sfondo);
+  color: var(--testo-spento);
+}
+.spunta svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.spunta[aria-pressed='true'] {
+  background: var(--accento);
+  border-color: var(--accento);
+  color: var(--su-accento);
+}
+/* Serie confermata: campi attenuati, ma ancora leggibili. */
+.riga-serie.fatta .campo {
+  background: transparent;
+  border-color: transparent;
+  color: var(--testo);
+  opacity: 1;
+  -webkit-text-fill-color: var(--testo);
+}
+
+.esercizio-azioni {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--bordo);
+  margin-top: 4px;
+}
+
+.griglia-rpe {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.griglia-rpe button {
+  min-height: 46px;
+  border: 1px solid var(--bordo);
+  border-radius: 10px;
+  background: var(--sfondo);
+  font-weight: 600;
+}
+.griglia-rpe button[aria-pressed='true'] {
+  background: var(--accento);
+  border-color: var(--accento);
+  color: var(--su-accento);
+}
+
+/* ---------- Allenati: riepilogo e storico ---------- */
+.titolo-sezione {
+  margin: 28px 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--testo-tenue);
+}
+.spazio-sopra {
+  margin-top: 16px;
+}
+.senza-margine {
+  margin-bottom: 4px;
+}
+.sottotitolo {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.settimana {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+}
+.settimana > div {
+  display: flex;
+  flex-direction: column;
+}
+.cifra {
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.cifra small {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--testo-tenue);
+}
+.settimana-scorsa {
+  grid-column: 1 / -1;
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--bordo);
+}
+
+.elenco-storico {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--spazio);
+}
+.elenco-storico li + li {
+  border-top: 1px solid var(--bordo);
+}
+.elenco-storico button {
+  width: 100%;
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: 92px 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 10px 8px 10px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+.elenco-storico svg {
+  grid-row: 1 / 3;
+  grid-column: 3;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--testo-spento);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.storico-data {
+  grid-row: 1 / 3;
+  color: var(--testo-tenue);
+  font-size: 14px;
+}
+.storico-nome {
+  font-weight: 600;
+}
+
+/* Dettaglio di un allenamento passato */
+.esercizio-passato {
+  padding: 14px 16px;
+}
+.esercizio-passato-testa {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.esercizio-passato-testa h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+}
+.serie-passate {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.serie-passate li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 10px;
+  background: var(--sfondo);
+  font-weight: 600;
+}
+.serie-passate .numero-serie {
+  font-size: 12px;
+}
+.serie-passate li.riscaldamento {
+  color: var(--testo-tenue);
+  font-weight: 500;
+}
+.note {
+  margin-top: 12px;
+}
+.note p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ---------- Peso ---------- */
+.nuova-pesata {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.nuova-pesata p {
+  margin: 0;
+}
+.nuova-pesata .pulsante.largo {
+  margin-top: 4px;
+}
+.nuova-pesata-campi {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.campo-grande {
+  font-size: 22px;
+  font-weight: 650;
+}
+input[type='date'].campo {
+  padding-right: 10px;
+}
+
+.statistiche {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.statistiche > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.statistiche .cifra {
+  font-size: 24px;
+}
+.filtro-periodo {
+  margin: 16px 0 10px;
+}
+
+.elenco-pesate {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 0 var(--spazio);
+}
+.elenco-pesate li {
+  display: grid;
+  grid-template-columns: 1fr auto 44px;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+}
+.elenco-pesate li + li {
+  border-top: 1px solid var(--bordo);
+}
+
+/* ---------- Grafico ---------- */
+/* Colori verificati per il fondo scuro: linea blu = andamento in evidenza,
+   pallini grigi = valori singoli (forma diversa + legenda: mai solo colore). */
+.grafico {
+  --colore-linea: #3987e5;
+  --colore-punti: #6a727d;
+  position: relative;
+}
+.grafico svg {
+  display: block;
+  touch-action: pan-y; /* scorrere in verticale resta possibile */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.legenda {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--testo-tenue);
+}
+.legenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.segno-punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--colore-punti);
+}
+.segno-linea {
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--colore-linea);
+}
+.grafico .griglia {
+  stroke: var(--bordo);
+  stroke-width: 1;
+}
+.grafico .asse {
+  fill: var(--testo-spento);
+  font-size: 11px;
+}
+.grafico .punto {
+  fill: var(--colore-punti);
+}
+.grafico .punto.attivo {
+  fill: var(--testo);
+  stroke: var(--superficie);
+  stroke-width: 2;
+}
+.grafico .linea {
+  fill: none;
+  stroke: var(--colore-linea);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.grafico .linea-attiva {
+  fill: var(--colore-linea);
+  stroke: var(--superficie);
+  stroke-width: 2;
+}
+.grafico .mirino {
+  stroke: var(--testo-spento);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.suggerimento {
+  position: absolute;
+  top: 26px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  border: 1px solid var(--bordo);
+  border-radius: 10px;
+  background: var(--superficie-alta);
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.suggerimento span {
+  color: var(--testo-tenue);
+}
+
+/* ---------- Progressi ---------- */
+.grafico.singola {
+  --colore-punti: var(--colore-linea);
+}
+.selettore {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+.selettore > span:first-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.selettore .pulsante-testo {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+.titolo-grafico {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.nota-grafico {
+  margin: 10px 0 0;
+}
+.voce-scelta[aria-current='true'] span:first-child {
+  color: var(--accento);
+  font-weight: 650;
+}
+
+.elenco-record {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--spazio);
+}
+.elenco-record li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+}
+.elenco-record li + li {
+  border-top: 1px solid var(--bordo);
+}
+.record-valore {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.record-valore strong {
+  font-size: 17px;
+}
+
+/* ---------- Altro ---------- */
+.stato-backup {
+  display: flex;
+  flex-direction: column;
+}
+.stato-backup p {
+  margin: 8px 0 0;
+}
+.stato-backup.avviso {
+  border-color: var(--errore);
+}
+.stato-backup.avviso .etichetta-sopra {
+  color: var(--errore);
+}
+.modulo .senza-margine-p,
+.senza-margine-p {
+  margin: 0;
+}
+.fila-pulsanti.verticale {
+  flex-direction: column;
+}
+.elenco-esercizi-gestione {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0 4px 0 var(--spazio);
+}
+.elenco-esercizi-gestione li {
+  display: flex;
+  align-items: center;
+}
+.elenco-esercizi-gestione li + li {
+  border-top: 1px solid var(--bordo);
+}
+
+/* =========================================================
+   Rifiniture grafiche (seconda passata)
+   ========================================================= */
+.etichetta-sopra.accento {
+  color: var(--accento);
+}
+
+/* Pulsante grande per l'azione principale della schermata. */
+.pulsante.grande {
+  min-height: 56px;
+  font-size: 17px;
+  border-radius: 14px;
+}
+.pulsante.primario {
+  box-shadow: 0 6px 20px -8px rgba(59, 134, 240, 0.6);
+}
+.pulsante.primario:active {
+  filter: brightness(0.92);
+}
+.pulsante.primario:disabled {
+  box-shadow: none;
+}
+.pulsante.piccolo-pulsante {
+  min-height: 44px;
+  padding: 0 16px;
+}
+.pulsante,
+.spunta,
+.griglia-rpe button {
+  transition: transform 0.1s ease, background-color 0.15s, filter 0.15s;
+}
+.pulsante:active:not(:disabled),
+.spunta:active,
+.griglia-rpe button:active {
+  transform: scale(0.97);
+}
+
+/* Home: allenamento proposto, in evidenza */
+.protagonista {
+  position: relative;
+  overflow: hidden;
+  padding: 20px var(--spazio) var(--spazio);
+  border-color: rgba(59, 134, 240, 0.35);
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(59, 134, 240, 0.16), transparent 60%),
+    var(--luce),
+    var(--superficie);
+}
+.protagonista h2 {
+  margin: 2px 0 2px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.protagonista p {
+  margin: 0;
+}
+.gettoni {
+  list-style: none;
+  margin: 14px 0 4px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gettoni li {
+  padding: 5px 10px;
+  border: 1px solid var(--bordo);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+  color: var(--testo-tenue);
+}
+.gettoni li.altri {
+  color: var(--testo-spento);
+}
+.in-corso {
+  border-color: rgba(59, 134, 240, 0.45);
+  background: var(--accento-tenue);
+}
+
+/* Settimana: striscia dei giorni + numeri */
+.settimana {
+  display: block;
+  margin-top: 12px;
+}
+.striscia-giorni {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+}
+.striscia-giorni li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--testo-spento);
+}
+.striscia-giorni i {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--bordo);
+}
+.striscia-giorni li.oggi {
+  color: var(--testo);
+}
+.striscia-giorni li.oggi i {
+  border-color: var(--testo-tenue);
+}
+.striscia-giorni li.fatto i {
+  border-color: var(--accento);
+  background: var(--accento)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4L18 8'/%3E%3C/svg%3E")
+    center / 16px no-repeat;
+}
+.settimana > .settimana-cifre {
+  display: grid;
+  flex-direction: initial;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--bordo);
+}
+.settimana-cifre > div {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Elenco compatto delle altre schede */
+.elenco-avvio {
+  list-style: none;
+  margin: 0;
+  padding: 0 12px 0 var(--spazio);
+}
+.elenco-avvio li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 68px;
+}
+.elenco-avvio li + li {
+  border-top: 1px solid var(--bordo);
+}
+.elenco-avvio li > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Allenamento in corso: barra di avanzamento sotto la testata */
+.testata-allenamento {
+  position: sticky;
+}
+.barra-avanzamento {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+}
+.barra-avanzamento i {
+  display: block;
+  height: 100%;
+  background: var(--accento);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.35s ease;
+}
+.esercizio-titolo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.conteggio {
+  flex: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--testo-spento);
+}
+.esercizio.completato {
+  border-color: rgba(59, 134, 240, 0.4);
+}
+.esercizio.completato .conteggio {
+  color: var(--accento);
+}
+
+/* La riga confermata "si accende" brevemente */
+.riga-serie.fatta .spunta {
+  animation: conferma 0.3s ease-out;
+}
+@keyframes conferma {
+  40% {
+    transform: scale(1.12);
+  }
+}
+.riga-serie.fatta {
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--accento-tenue), transparent 80%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* =========================================================
+   Terza passata: carattere sportivo, record, niente volume
+   ========================================================= */
+:root {
+  /* Font "da palestra" per titoli e numeri grandi. */
+  --font-display: 'Barlow Condensed', 'Inter Variable', sans-serif;
+  --oro: #f0b54a; /* solo per i record (★) */
+}
+
+/* Una luce blu molto tenue in alto: lo sfondo non è più piatto. */
+body {
+  background:
+    radial-gradient(90% 320px at 50% -80px, rgba(59, 134, 240, 0.13), transparent 70%) no-repeat,
+    var(--sfondo);
+}
+
+.titolo-pagina {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-top: 4px;
+}
+.nome-display {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+.nome-display.grande,
+.protagonista h2.nome-display {
+  font-size: 32px;
+  margin: 4px 0 4px;
+}
+.cifra-display {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+.cifra-display.enorme {
+  font-size: 64px;
+}
+.cifra-display small {
+  font-size: 0.45em;
+  font-weight: 600;
+  color: var(--testo-tenue);
+  letter-spacing: 0.02em;
+}
+
+/* Settimana: anello dell'obiettivo + giorni + 3 numeri */
+.settimana > .settimana-testa {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.settimana-testa > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.anello {
+  flex: none;
+  width: 72px;
+  height: 72px;
+}
+.anello circle {
+  fill: none;
+  stroke-width: 7;
+}
+.anello-fondo {
+  stroke: var(--superficie-alta);
+}
+.anello-pieno {
+  stroke: var(--accento);
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s ease;
+}
+.settimana > .settimana-cifre {
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+}
+.settimana-cifre dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--testo-spento);
+}
+.settimana-cifre dd {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+}
+.settimana-scorsa {
+  display: none;
+}
+
+/* Ultimi allenamenti: tessere con la data */
+.elenco-sessioni {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.elenco-sessioni button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px 10px 10px;
+  text-align: left;
+}
+.tessera-data {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--superficie-alta);
+  line-height: 1;
+}
+.tessera-data b {
+  font-family: var(--font-display);
+  font-size: 24px;
+}
+.tessera-data small {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--testo-tenue);
+}
+.sessione-testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.distintivo-record {
+  flex: none;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(240, 181, 74, 0.12);
+  color: var(--oro);
+  font-size: 12px;
+  font-weight: 700;
+}
+.testo-record {
+  color: var(--oro);
+  font-weight: 600;
+}
+
+/* Record durante e dopo l'allenamento */
+.riga-serie.record .numero-serie {
+  color: var(--oro);
+  font-size: 18px;
+}
+.riga-serie.record {
+  background: linear-gradient(90deg, rgba(240, 181, 74, 0.14), transparent 80%);
+}
+.serie-passate li.record {
+  background: rgba(240, 181, 74, 0.12);
+}
+.serie-passate li.record .numero-serie {
+  color: var(--oro);
+}
+
+/* Testata dell'allenamento: cronometro grande */
+.testata-dati {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 2px 0 0 !important;
+  font-size: 13px;
+}
+.testata-dati > span:first-child {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+.testata-allenamento h1 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.esercizio-testa h2,
+.esercizio-passato-testa h2 {
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+/* Dettaglio allenamento: tre numeri in evidenza */
+.cifre-sessione {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0 0 4px;
+}
+.cifre-sessione > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cifre-sessione dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--testo-spento);
+}
+.cifre-sessione dd {
+  margin: 2px 0;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+/* Valore principale sopra i grafici */
+.cima {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.variazione {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--testo-tenue);
+}
+.variazione.su {
+  color: var(--accento);
+}
+.peso-cima {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 20px var(--spazio);
+}
+
+/* Obiettivo settimanale (Altro) */
+.obiettivo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.obiettivo > span {
+  display: flex;
+  flex-direction: column;
+}
+.obiettivo small {
+  font-size: 13px;
+}
+.obiettivo .contatore {
+  width: 150px;
+}
+
+/* Titoli di sezione un po' più marcati */
+.titolo-sezione {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--testo-tenue);
+}
+
+/* ---------- Cardio (cyclette e corsa) ---------- */
+.riga-cardio {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.riga-cardio .etichetta-sopra {
+  margin: 0 6px 0 2px;
+}
+.due-colonne {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.tre-colonne {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.tre-colonne .campo {
+  text-align: center;
+}
+/* Nella striscia: cerchio pieno = pesi, anello blu = solo cardio. */
+.striscia-giorni li.cardio i {
+  border: 2px solid var(--accento);
+  background: var(--accento-tenue);
+}
+.tessera-data.cardio {
+  background: var(--accento-tenue);
+}
+.tessera-data.cardio b {
+  color: var(--accento);
+}
+
+/* Due obiettivi affiancati nella settimana: pesi e cardio */
+.settimana > .settimana-testa {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+.obiettivo-settimana {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.obiettivo-settimana > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.obiettivo-settimana .anello {
+  width: 56px;
+  height: 56px;
+}
+.obiettivo-settimana .cifra-display {
+  font-size: 34px;
+}
+.obiettivo-nome {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--testo-tenue);
+}
+/* Il cardio usa un azzurro più chiaro, per distinguerlo dai pesi. */
+.obiettivo-settimana.cardio .anello-pieno {
+  stroke: #7cc4f5;
+}
+.elenco-obiettivi {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* Stesso azzurro del cardio anche nella striscia dei giorni e nello storico. */
+.striscia-giorni li.cardio i {
+  border-color: #7cc4f5;
+  background: rgba(124, 196, 245, 0.14);
+}
+.tessera-data.cardio {
+  background: rgba(124, 196, 245, 0.14);
+}
+.tessera-data.cardio b {
+  color: #7cc4f5;
+}
+.settimana-testa > .obiettivo-settimana {
+  flex-direction: row;
+  gap: 10px;
+}
+.settimana-cifre dd {
+  white-space: nowrap;
+}
