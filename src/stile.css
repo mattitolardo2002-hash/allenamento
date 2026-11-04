@@ -399,6 +399,14 @@ input[type='date'].campo { padding-right: 10px; }
 .titolo-con-azione .pulsante-testo { min-height: 28px; display: inline-flex; align-items: center; gap: 2px; font-size: 13.5px; }
 .settimana-titolo .pulsante-testo { min-height: 28px; margin: -6px 0; font-size: 13.5px; }
 .settimana-testa { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 16px; }
+.settimana-testa.uno { grid-template-columns: 1fr; }
+.settimana-testa.uno .anello { width: 64px; height: 64px; }
+.settimana-testa.uno .cifra-display { font-size: 36px; }
+.obiettivo-settimana > .tacche { flex: 1; flex-direction: row; align-self: center; gap: 5px; margin-left: 6px; }
+.tacche i { flex: 1; height: 10px; border-radius: 5px; background: var(--traccia); }
+.tacche i.piena { background: var(--accento); box-shadow: 0 4px 12px -4px rgba(59, 134, 240, 0.8); }
+.obiettivo-settimana.cardio .tacche i.piena { background: var(--cardio); box-shadow: none; }
+.settimana-nessuno { margin: 12px 0 14px; }
 .obiettivo-settimana { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .obiettivo-settimana > div { display: flex; flex-direction: column; min-width: 0; }
 .obiettivo-settimana .cifra-display { font-size: 30px; }

@@ -14,14 +14,24 @@ export const PREDEFINITI: Obiettivi = { pesi: 3, cardio: 2 };
 const PREFISSO = 'obiettivi:';
 
 /**
+ * Legge un obiettivo predefinito salvato. Lo 0 è valido (es. niente cardio):
+ * si usa il valore di partenza solo se non è mai stato impostato.
+ */
+export async function leggiObiettivo(chiave: string, predefinito: number): Promise<number> {
+  const v = await leggiImpostazione(chiave);
+  const n = Number(v);
+  return v === undefined || v === '' || !Number.isFinite(n) ? predefinito : n;
+}
+
+/**
  * Obiettivi in vigore: quelli predefiniti (da "Altro") e le eccezioni
  * impostate per singole settimane. `di(lunedi)` dice quali valgono
  * per una certa settimana.
  */
 export function useObiettivi() {
   const dati = useLiveQuery(async () => {
-    const pesi = Number(await leggiImpostazione('obiettivoSettimanale')) || PREDEFINITI.pesi;
-    const cardio = Number(await leggiImpostazione('obiettivoCardio')) || PREDEFINITI.cardio;
+    const pesi = await leggiObiettivo('obiettivoSettimanale', PREDEFINITI.pesi);
+    const cardio = await leggiObiettivo('obiettivoCardio', PREDEFINITI.cardio);
     const eccezioni = new Map<string, Obiettivi>();
     const righe = await db.impostazioni.where('chiave').startsWith(PREFISSO).toArray();
     for (const r of righe) {

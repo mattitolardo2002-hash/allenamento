@@ -104,8 +104,8 @@ export function FinestraObiettiviSettimana({ aperta, onChiudi }: { aperta: boole
       </div>
 
       <p className="testo-tenue piccolo">
-        Metti 0 per una settimana di pausa: l’anello mostra “Pausa” e la serie di settimane di fila non si
-        interrompe. Gli obiettivi predefiniti si cambiano in Altro.
+        Metti 0 per una settimana di pausa: quell’anello sparisce dalla home e la serie di settimane di fila
+        non si interrompe. Gli obiettivi predefiniti si cambiano in Altro.
       </p>
       {personalizzata && (
         <button type="button" className="pulsante largo" onClick={() => impostaSettimana(lunedi, null)}>

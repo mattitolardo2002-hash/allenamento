@@ -104,6 +104,12 @@ function Home() {
   const lunedi = lunediDi(new Date());
   const cardioSettimana = cardio.filter((c) => c.data >= lunedi && c.data <= giorni[6].data);
   const minutiCardio = Math.round(cardioSettimana.reduce((t, c) => t + c.durataSec, 0) / 60);
+  const mostraPesi = obiettivo > 0 || attuale.allenamenti > 0;
+  const mostraCardio = obiettivoCardio > 0 || cardioSettimana.length > 0;
+  // Senza obiettivo di cardio e senza cardio nell'ultimo mese, la sezione Cardio
+  // sparisce dalla home (resta sempre registrabile dal "+").
+  const unMeseFa = dataLocale(new Date(Date.now() - 30 * 86_400_000));
+  const mostraSezioneCardio = obiettivi.predefiniti.cardio > 0 || cardio.some((c) => c.data >= unMeseFa);
 
   // Storico unico: allenamenti con i pesi e attività cardio, dal più recente.
   const storico = [
@@ -175,11 +181,28 @@ function Home() {
             Obiettivi
           </button>
         </div>
-        {/* Due obiettivi separati: pesi e cardio. */}
-        <div className="settimana-testa">
-          <Obiettivo nome="Pesi" valore={attuale.allenamenti} obiettivo={obiettivo} />
-          <Obiettivo nome="Cardio" valore={cardioSettimana.length} obiettivo={obiettivoCardio} cardio />
-        </div>
+        {/* Pesi e cardio: si mostra solo ciò che ha un obiettivo (o è stato fatto),
+            e se resta un solo anello occupa tutta la riga, senza buchi. */}
+        {mostraPesi || mostraCardio ? (
+          <div className={`settimana-testa${mostraPesi && mostraCardio ? '' : ' uno'}`}>
+            {mostraPesi && (
+              <Obiettivo nome="Pesi" valore={attuale.allenamenti} obiettivo={obiettivo} largo={!mostraCardio} />
+            )}
+            {mostraCardio && (
+              <Obiettivo
+                nome="Cardio"
+                valore={cardioSettimana.length}
+                obiettivo={obiettivoCardio}
+                cardio
+                largo={!mostraPesi}
+              />
+            )}
+          </div>
+        ) : (
+          <p className="testo-tenue piccolo settimana-nessuno">
+            {obiettivi.eccezioni.has(lunedi) ? 'Settimana di pausa.' : 'Nessun obiettivo per questa settimana.'}
+          </p>
+        )}
         <ol className="striscia-giorni">
           {giorni.map((d) => (
             <li
@@ -254,32 +277,36 @@ function Home() {
       </ul>
 
       {/* Cardio: allenamenti a sé, indipendenti dalle schede dei pesi. */}
-      <h2 className="titolo-sezione">Cardio</h2>
-      <ul className="riquadro elenco-avvio">
-        {(['cyclette', 'corsa'] as const).map((t) => {
-          const ultimaC = [...cardio].filter((c) => c.tipo === t).sort((x, y) => y.data.localeCompare(x.data))[0];
-          return (
-            <li key={t}>
-              <div>
-                <IconaTinta icona={ICONE_CARDIO[t].icona} colore={ICONE_CARDIO[t].colore} misura={36} />
-                <span className="testo-riga">
-                  <span className="storico-nome">{NOMI_CARDIO[t]}</span>
-                  <span className="testo-tenue piccolo">
-                    {ultimaC
-                      ? `${quandoFa(ultimaC.data).replace(/^./, (c) => c.toUpperCase())} · ${riassuntoCardio(ultimaC)}`
-                      : t === 'corsa'
-                        ? 'Km, passo e battito'
-                        : 'Tempo e battito medio'}
-                  </span>
-                </span>
-              </div>
-              <button type="button" className="pulsante piccolo-pulsante" onClick={() => setFinestraCardio({ tipo: t })}>
-                Registra
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {mostraSezioneCardio && (
+        <>
+          <h2 className="titolo-sezione">Cardio</h2>
+          <ul className="riquadro elenco-avvio">
+            {(['cyclette', 'corsa'] as const).map((t) => {
+              const ultimaC = [...cardio].filter((c) => c.tipo === t).sort((x, y) => y.data.localeCompare(x.data))[0];
+              return (
+                <li key={t}>
+                  <div>
+                    <IconaTinta icona={ICONE_CARDIO[t].icona} colore={ICONE_CARDIO[t].colore} misura={36} />
+                    <span className="testo-riga">
+                      <span className="storico-nome">{NOMI_CARDIO[t]}</span>
+                      <span className="testo-tenue piccolo">
+                        {ultimaC
+                          ? `${quandoFa(ultimaC.data).replace(/^./, (c) => c.toUpperCase())} · ${riassuntoCardio(ultimaC)}`
+                          : t === 'corsa'
+                            ? 'Km, passo e battito'
+                            : 'Tempo e battito medio'}
+                      </span>
+                    </span>
+                  </div>
+                  <button type="button" className="pulsante piccolo-pulsante" onClick={() => setFinestraCardio({ tipo: t })}>
+                    Registra
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
 
       <div className="titolo-con-azione">
         <h2 className="titolo-sezione">Ultimi allenamenti</h2>
@@ -501,12 +528,17 @@ function Obiettivo({
   valore,
   obiettivo,
   cardio = false,
+  largo = false,
 }: {
   nome: string;
   valore: number;
   obiettivo: number;
   cardio?: boolean;
+  /** Unico obiettivo della settimana: aggiunge le tacche per riempire la riga. */
+  largo?: boolean;
 }) {
+  // Una tacca per ogni seduta prevista (almeno quante ne hai fatte).
+  const tacche = Math.min(Math.max(obiettivo, valore), 7);
   return (
     <div className={`obiettivo-settimana${cardio ? ' cardio' : ''}${obiettivo === 0 ? ' pausa' : ''}`}>
       <Anello valore={valore} obiettivo={obiettivo} />
@@ -530,6 +562,13 @@ function Obiettivo({
               : `Ancora ${obiettivo - valore}`}
         </span>
       </div>
+      {largo && tacche > 0 && (
+        <div className="tacche" aria-hidden="true">
+          {Array.from({ length: tacche }, (_, i) => (
+            <i key={i} className={i < valore ? 'piena' : ''} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

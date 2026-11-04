@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, leggiImpostazione, nuovoId, scriviImpostazione } from '../dati/db';
-import { PREDEFINITI } from '../logica/obiettivi';
+import { PREDEFINITI, leggiObiettivo } from '../logica/obiettivi';
 import type { Esercizio } from '../dati/tipi';
 import { consegnaFile, preparaEsportazione, segnaEsportati, type Backup } from '../dati/esportazione';
 import { importaBackup, leggiBackup } from '../dati/importazione';
@@ -57,15 +57,9 @@ function StatoBackup() {
 
 /** Obiettivi settimanali (pesi e cardio), usati per gli anelli nella home. */
 function Obiettivo() {
-  const pesi = useLiveQuery(
-    () => leggiImpostazione('obiettivoSettimanale').then((v) => Number(v) || PREDEFINITI.pesi),
-    [],
-  );
-  const cardio = useLiveQuery(
-    () => leggiImpostazione('obiettivoCardio').then((v) => Number(v) || PREDEFINITI.cardio),
-    [],
-  );
-  if (!pesi || !cardio) return null;
+  const pesi = useLiveQuery(() => leggiObiettivo('obiettivoSettimanale', PREDEFINITI.pesi), []);
+  const cardio = useLiveQuery(() => leggiObiettivo('obiettivoCardio', PREDEFINITI.cardio), []);
+  if (pesi === undefined || cardio === undefined) return null;
 
   return (
     <>
@@ -99,10 +93,10 @@ function RigaObiettivo({
     <div className="obiettivo">
       <span>
         {etichetta}
-        <small className="testo-tenue">a settimana</small>
+        <small className="testo-tenue">{valore === 0 ? 'Nessun obiettivo: non compare nella home' : 'a settimana'}</small>
       </span>
       <div className="contatore">
-        <button type="button" aria-label="Uno in meno" disabled={valore <= 1} onClick={() => onCambia(valore - 1)}>
+        <button type="button" aria-label="Uno in meno" disabled={valore <= 0} onClick={() => onCambia(valore - 1)}>
           −
         </button>
         <output>{valore}</output>
