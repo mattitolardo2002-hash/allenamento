@@ -41,13 +41,13 @@ export function eserciziSvolti(bozza: Bozza, nomi: Map<string, string>): Eserciz
     .filter((e) => e.serie.length > 0);
 }
 
-/** Salva l'allenamento nello storico ed elimina la bozza, in un'unica operazione. */
+/** Salva l'allenamento nello storico ed elimina la bozza, in un'unica operazione. Restituisce l'id salvato. */
 export async function concludiAllenamento(
   bozza: Bozza,
   nomi: Map<string, string>,
   rpe: number | null,
   note: string,
-): Promise<void> {
+): Promise<string> {
   const fine = new Date();
   const esercizi = eserciziSvolti(bozza, nomi);
   const sessione: Sessione = {
@@ -70,6 +70,7 @@ export async function concludiAllenamento(
     await db.sessioni.add(sessione);
     await db.bozza.delete('corrente');
   });
+  return sessione.id;
 }
 
 export async function annullaAllenamento(): Promise<void> {

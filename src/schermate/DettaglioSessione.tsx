@@ -8,6 +8,7 @@ import { eRecord, miglioriPerEsercizio } from '../logica/record';
 import { vai } from '../navigazione';
 import { Conferma } from '../componenti/Finestra';
 import { apertoDalCalendario } from './Calendario';
+import { IconaEsercizio } from '../componenti/Icone';
 
 /** Un allenamento passato: lettura, correzione ed eliminazione. */
 export function DettaglioSessione({ id }: { id: string }) {
@@ -70,6 +71,7 @@ export function DettaglioSessione({ id }: { id: string }) {
           return (
             <li key={i} className="riquadro esercizio-passato">
               <div className="esercizio-passato-testa">
+                <IconaEsercizio nome={e.nome} misura={34} />
                 <h2>{e.nome}</h2>
               </div>
               <ol className="serie-passate">

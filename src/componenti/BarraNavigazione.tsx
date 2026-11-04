@@ -1,59 +1,58 @@
-import type { ReactNode } from 'react';
+import { IconBarbell, IconChartLine, IconDots, IconPlayerPlay, IconPlus, IconScale, type Icon } from '@tabler/icons-react';
 import { SEZIONI, type IdSezione } from '../navigazione';
 
-// Icone a tratto sottile, disegnate su una griglia 24×24.
-const ICONE: Record<IdSezione, ReactNode> = {
-  allenati: (
-    <>
-      <path d="M3 12h18" />
-      <path d="M6 7v10M3.5 9v6M18 7v10M20.5 9v6" />
-    </>
-  ),
-  peso: (
-    <>
-      <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
-      <path d="M8.5 9.5a5 5 0 0 1 7 0M12 9.5l1.5-1.5" />
-    </>
-  ),
-  progressi: <path d="M3.5 17.5l5-5 4 3 7.5-8M15 7.5h5v5" />,
-  schede: (
-    <>
-      <rect x="4.5" y="3.5" width="15" height="17" rx="2.5" />
-      <path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4" />
-    </>
-  ),
-  altro: (
-    <>
-      <circle cx="6" cy="12" r="1.2" />
-      <circle cx="12" cy="12" r="1.2" />
-      <circle cx="18" cy="12" r="1.2" />
-    </>
-  ),
+const ICONE: Partial<Record<IdSezione, Icon>> = {
+  allenati: IconBarbell,
+  progressi: IconChartLine,
+  peso: IconScale,
+  altro: IconDots,
 };
 
+// Barra in basso: due sezioni a sinistra, il "+" al centro, due a destra.
+// Con un allenamento in corso il "+" diventa verde e lo riprende.
 export function BarraNavigazione({
   attiva,
+  inCorso,
   onScegli,
+  onPiu,
 }: {
   attiva: IdSezione;
+  inCorso: boolean;
   onScegli: (id: IdSezione) => void;
+  onPiu: () => void;
 }) {
+  const nellaBarra = SEZIONI.filter((s) => s.inBarra);
+  // Le schede fanno parte di Allenati: la voce resta accesa.
+  const evidenziata = attiva === 'schede' ? 'allenati' : attiva;
+  const voce = (s: (typeof SEZIONI)[number]) => {
+    const Ic = ICONE[s.id]!;
+    return (
+      <button
+        key={s.id}
+        type="button"
+        className="voce-nav"
+        aria-current={s.id === evidenziata ? 'page' : undefined}
+        onClick={() => onScegli(s.id)}
+      >
+        <Ic size={24} stroke={1.6} aria-hidden="true" />
+        <span>{s.etichetta}</span>
+      </button>
+    );
+  };
   return (
     <nav className="barra-nav" aria-label="Sezioni">
-      {SEZIONI.map((s) => (
+      <div className="barra-nav-interno">
+        {nellaBarra.slice(0, 2).map(voce)}
         <button
-          key={s.id}
           type="button"
-          className="voce-nav"
-          aria-current={s.id === attiva ? 'page' : undefined}
-          onClick={() => onScegli(s.id)}
+          className={`nav-piu${inCorso ? ' in-corso-nav' : ''}`}
+          onClick={onPiu}
+          aria-label={inCorso ? 'Riprendi l’allenamento in corso' : 'Nuovo: allenamento, cardio o pesata'}
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            {ICONE[s.id]}
-          </svg>
-          <span>{s.etichetta}</span>
+          {inCorso ? <IconPlayerPlay size={24} stroke={2.2} aria-hidden="true" /> : <IconPlus size={26} stroke={2.2} aria-hidden="true" />}
         </button>
-      ))}
+        {nellaBarra.slice(2).map(voce)}
+      </div>
     </nav>
   );
 }

@@ -7,8 +7,10 @@ import { durata, leggiNumero, numero } from '../logica/formato';
 import { testoUltimaVolta, ultimeVolte, type UltimaVolta } from '../logica/storico';
 import { eRecord, miglioriPerEsercizio, type Migliori } from '../logica/record';
 import { vai } from '../navigazione';
+import { PREFISSO_FINE } from './Allenati';
 import { Conferma, Finestra } from '../componenti/Finestra';
 import { NOMI_TIPO, SceltaEsercizio } from '../componenti/SceltaEsercizio';
+import { IconaEsercizio } from '../componenti/Icone';
 
 /**
  * Schermata usata in palestra: per ogni esercizio una riga per serie
@@ -149,6 +151,7 @@ export function AllenamentoInCorso() {
             <li key={ei} className={`riquadro esercizio${completato ? ' completato' : ''}`}>
               <div className="esercizio-testa">
                 <div className="esercizio-titolo">
+                  <IconaEsercizio nome={es?.nome ?? ''} />
                   <h2>{es?.nome ?? '?'}</h2>
                   <span className="conteggio">
                     {completato ? '✓ ' : ''}
@@ -272,8 +275,8 @@ export function AllenamentoInCorso() {
         record={recordOggi}
         onChiudi={() => setTermina(false)}
         onSalva={async (rpe, note) => {
-          await concludiAllenamento(bozza, nomi, rpe, note);
-          vai('allenati');
+          const id = await concludiAllenamento(bozza, nomi, rpe, note);
+          vai('allenati', PREFISSO_FINE + id);
         }}
       />
 

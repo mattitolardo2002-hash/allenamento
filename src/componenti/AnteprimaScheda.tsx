@@ -4,6 +4,7 @@ import type { Scheda } from '../dati/tipi';
 import { dataBreve } from '../logica/formato';
 import { serieUltimaVolta, ultimeVolte } from '../logica/storico';
 import { Finestra } from './Finestra';
+import { IconaEsercizio } from './Icone';
 
 /**
  * Anteprima di una scheda prima di iniziarla: per ogni esercizio cosa prevede
@@ -39,6 +40,7 @@ export function AnteprimaScheda({
               return (
                 <li key={i}>
                   <div className="anteprima-testa">
+                    <IconaEsercizio nome={es?.nome ?? ''} misura={34} />
                     <strong>{es?.nome ?? '?'}</strong>
                     <span className="testo-tenue piccolo">
                       {v.serie}×{v.rip || '—'}

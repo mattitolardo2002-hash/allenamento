@@ -1,16 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { usePosizione, vai } from './navigazione';
 import { db } from './dati/db';
 import { BarraNavigazione } from './componenti/BarraNavigazione';
+import { FinestraNuovo } from './componenti/FinestraNuovo';
 import { Allenati } from './schermate/Allenati';
 import { Peso } from './schermate/Peso';
 import { Progressi } from './schermate/Progressi';
 import { Schede } from './schermate/Schede';
 import { Altro } from './schermate/Altro';
 
-// Struttura generale: contenuto della sezione scelta + barra in basso.
+// Struttura generale: contenuto della sezione scelta + barra in basso con il "+".
 export function App() {
   const { sezione, dettaglio } = usePosizione();
+  const inCorso = useLiveQuery(() => db.bozza.get('corrente').then((b) => !!b), []) ?? false;
+  const [menuNuovo, setMenuNuovo] = useState(false);
 
   // All'apertura dell'app: se c'era un allenamento a metà, si riparte da lì.
   useEffect(() => {
@@ -31,7 +35,13 @@ export function App() {
           {sezione === 'altro' && <Altro />}
         </div>
       </main>
-      <BarraNavigazione attiva={sezione} onScegli={(id) => vai(id)} />
+      <BarraNavigazione
+        attiva={sezione}
+        inCorso={inCorso}
+        onScegli={(id) => vai(id)}
+        onPiu={() => (inCorso ? vai('allenati', 'in-corso') : setMenuNuovo(true))}
+      />
+      <FinestraNuovo aperta={menuNuovo} onChiudi={() => setMenuNuovo(false)} />
     </>
   );
 }

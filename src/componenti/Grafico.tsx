@@ -86,7 +86,7 @@ export function Grafico({
 
   const sel = attivo !== null ? punti[attivo] : null;
   const selLinea = sel && linea?.find((p) => p.data === sel.data);
-  const percorso = linea?.map((p, i) => `${i ? 'L' : 'M'}${x(p.data).toFixed(1)},${y(p.valore).toFixed(1)}`).join('');
+  const percorso = linea && percorsoMorbido(linea.map((p) => [x(p.data), y(p.valore)]));
 
   return (
     // Senza `nomeLinea` è una serie sola: pallini e linea dello stesso colore,
@@ -138,7 +138,7 @@ export function Grafico({
             <>
               <defs>
                 <linearGradient id={idSfumatura} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" style={{ stopColor: 'var(--colore-linea)', stopOpacity: 0.28 }} />
+                  <stop offset="0%" style={{ stopColor: 'var(--colore-linea)', stopOpacity: 0.32 }} />
                   <stop offset="100%" style={{ stopColor: 'var(--colore-linea)', stopOpacity: 0 }} />
                 </linearGradient>
               </defs>
@@ -198,4 +198,38 @@ function taccheY(min: number, max: number): number[] {
   const tacche = [];
   for (let t = inizio; t <= fine + passo / 1000; t += passo) tacche.push(Math.round(t * 1000) / 1000);
   return tacche;
+}
+
+/**
+ * Linea morbida che passa per tutti i punti senza "sforare" sopra o sotto
+ * i valori reali (interpolazione monotona: niente gobbe inventate).
+ */
+function percorsoMorbido(punti: [number, number][]): string {
+  if (!punti.length) return '';
+  const f = (n: number) => n.toFixed(1);
+  if (punti.length < 3) return punti.map(([px, py], i) => `${i ? 'L' : 'M'}${f(px)},${f(py)}`).join('');
+  const n = punti.length;
+  // Pendenze tra punti vicini e, in ogni punto, pendenza della curva
+  // (limitata in modo che la curva non superi mai i valori vicini).
+  const d = punti.slice(1).map(([px, py], i) => {
+    const dx = px - punti[i][0];
+    return dx === 0 ? 0 : (py - punti[i][1]) / dx;
+  });
+  const m = punti.map(([px], i) => {
+    if (i === 0) return d[0];
+    if (i === n - 1) return d[n - 2];
+    const h0 = px - punti[i - 1][0];
+    const h1 = punti[i + 1][0] - px;
+    if (h0 + h1 === 0) return 0;
+    const p = (d[i - 1] * h1 + d[i] * h0) / (h0 + h1);
+    return (Math.sign(d[i - 1]) + Math.sign(d[i])) * Math.min(Math.abs(d[i - 1]), Math.abs(d[i]), 0.5 * Math.abs(p));
+  });
+  let out = `M${f(punti[0][0])},${f(punti[0][1])}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = punti[i];
+    const [x1, y1] = punti[i + 1];
+    const h = (x1 - x0) / 3;
+    out += `C${f(x0 + h)},${f(y0 + m[i] * h)} ${f(x1 - h)},${f(y1 - m[i + 1] * h)} ${f(x1)},${f(y1)}`;
+  }
+  return out;
 }

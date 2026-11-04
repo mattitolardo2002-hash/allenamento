@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 
-// Le sezioni principali, nell'ordine della barra in basso.
+// Le sezioni dell'app. Quelle con `inBarra` compaiono nella barra in basso
+// (due a sinistra e due a destra del "+"); le schede si aprono da Allenati.
 export const SEZIONI = [
-  { id: 'allenati', etichetta: 'Allenati' },
-  { id: 'peso', etichetta: 'Peso' },
-  { id: 'progressi', etichetta: 'Progressi' },
-  { id: 'schede', etichetta: 'Schede' },
-  { id: 'altro', etichetta: 'Altro' },
+  { id: 'allenati', etichetta: 'Allenati', inBarra: true },
+  { id: 'progressi', etichetta: 'Progressi', inBarra: true },
+  { id: 'peso', etichetta: 'Peso', inBarra: true },
+  { id: 'altro', etichetta: 'Altro', inBarra: true },
+  { id: 'schede', etichetta: 'Schede', inBarra: false },
 ] as const;
 
 export type IdSezione = (typeof SEZIONI)[number]['id'];
@@ -42,3 +43,4 @@ export function usePosizione(): Posizione {
 
   return posizione;
 }
+

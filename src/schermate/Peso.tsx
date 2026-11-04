@@ -6,6 +6,19 @@ import { dataBreve, dataConGiorno, dataLocale, leggiNumero, numero } from '../lo
 import { mediaMobile, numeroGiorno, statistichePeso } from '../logica/peso';
 import { Grafico } from '../componenti/Grafico';
 import { Conferma } from '../componenti/Finestra';
+import { IconArrowDownRight, IconArrowUpRight } from '@tabler/icons-react';
+
+/** "78,4 kg" con i decimali più piccoli e tenui, come in Bilancio. */
+function CifraKg({ kg }: { kg: number }) {
+  const [intero, decimali] = numero(kg).split(',');
+  return (
+    <span className="cifra-display enorme">
+      {intero}
+      {decimali && <span className="decimali">,{decimali}</span>}
+      <small> kg</small>
+    </span>
+  );
+}
 
 // Periodi del grafico: giorni da mostrare (null = tutto lo storico).
 const PERIODI = [
@@ -38,16 +51,27 @@ export function Peso() {
       <h1 className="titolo-pagina">Peso</h1>
 
       {stat && (
-        <section className="riquadro peso-cima">
-          <span className="etichetta-sopra">Media 7 giorni</span>
-          <span className="cifra-display enorme">
-            {numero(Math.round(stat.media * 10) / 10)}
-            <small> kg</small>
-          </span>
+        <section className="riquadro riquadro-eroe peso-cima">
+          <span className="etichetta-sopra accento">Media 7 giorni</span>
+          <CifraKg kg={Math.round(stat.media * 10) / 10} />
           <span className="variazione">
-            {stat.variazione === null
-              ? 'Variazione: servono almeno 8 giorni di pesate'
-              : `${stat.variazione > 0.05 ? '▲' : stat.variazione < -0.05 ? '▼' : '='} ${numero(Math.abs(Math.round(stat.variazione * 10) / 10))} kg in 7 giorni`}
+            {stat.variazione === null ? (
+              'Variazione: servono almeno 8 giorni di pesate'
+            ) : (
+              <>
+                <span className="pastiglia blu">
+                  {stat.variazione > 0.05 ? (
+                    <IconArrowUpRight size={14} stroke={2.2} aria-hidden="true" />
+                  ) : stat.variazione < -0.05 ? (
+                    <IconArrowDownRight size={14} stroke={2.2} aria-hidden="true" />
+                  ) : (
+                    '='
+                  )}
+                  {numero(Math.abs(Math.round(stat.variazione * 10) / 10))} kg
+                </span>
+                in 7 giorni
+              </>
+            )}
           </span>
           <span className="testo-tenue piccolo">
             Ultima pesata: {numero(stat.ultima.kg)} kg · {dataBreve(stat.ultima.data)}

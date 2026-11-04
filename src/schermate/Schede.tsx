@@ -3,6 +3,8 @@ import { db, nuovoId } from '../dati/db';
 import type { Scheda } from '../dati/tipi';
 import { vai } from '../navigazione';
 import { EditorScheda } from './EditorScheda';
+import { IconChevronLeft } from '@tabler/icons-react';
+import { IconaNumero } from '../componenti/Icone';
 
 // Sezione Schede: elenco delle schede oppure, se ne è aperta una, il suo editor.
 export function Schede({ dettaglio }: { dettaglio: string | null }) {
@@ -41,7 +43,11 @@ function ElencoSchede() {
 
   return (
     <>
-      <h1 className="titolo-pagina">Schede</h1>
+      <button type="button" className="pulsante-indietro" onClick={() => vai('allenati')}>
+        <IconChevronLeft size={20} aria-hidden="true" />
+        Allenati
+      </button>
+      <h1 className="titolo-pagina">Le tue schede</h1>
 
       {schede.length === 0 && (
         <section className="riquadro vuoto">
@@ -53,11 +59,14 @@ function ElencoSchede() {
         {schede.map((s, i) => (
           <li key={s.id} className="riquadro scheda">
             <button type="button" className="scheda-apri" onClick={() => vai('schede', s.id)}>
-              <span className="scheda-nome">{s.nome}</span>
-              <span className="testo-tenue piccolo">
-                {s.voci.length === 1 ? '1 esercizio' : `${s.voci.length} esercizi`}
+              <IconaNumero n={i + 1} />
+              <span>
+                <span className="scheda-nome">{s.nome}</span>
+                <span className="testo-tenue piccolo">
+                  {s.voci.length === 1 ? '1 esercizio' : `${s.voci.length} esercizi`}
+                </span>
+                <span className="scheda-riassunto">{s.voci.map((v) => nomeEsercizio(v.esercizioId)).join(' · ')}</span>
               </span>
-              <span className="scheda-riassunto">{s.voci.map((v) => nomeEsercizio(v.esercizioId)).join(' · ')}</span>
             </button>
             <div className="scheda-ordine">
               <button
@@ -91,7 +100,7 @@ function ElencoSchede() {
         + Nuova scheda
       </button>
       <p className="testo-tenue piccolo centrato">
-        L’ordine conta: dopo un allenamento l’app ti propone la scheda successiva.
+        L’ordine è quello della rotazione: dopo un allenamento l’app ti propone la scheda successiva.
       </p>
     </>
   );

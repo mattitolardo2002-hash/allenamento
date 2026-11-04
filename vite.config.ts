@@ -1,11 +1,39 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import pacchetto from './package.json';
 
 // Colore di sfondo dell'app: usato anche per la barra di stato dell'iPhone
 // e per la schermata di avvio.
-const SFONDO = '#0d0f12';
+const SFONDO = '#07090c';
+
+// Regole di sicurezza (Content Security Policy) per la versione pubblicata,
+// le stesse di Bilancio. Il browser carica solo i file dell'app stessa e
+// BLOCCA ogni collegamento verso altri siti: anche se un giorno entrasse
+// del codice estraneo, non potrebbe spedire i tuoi dati da nessuna parte.
+// Solo in "build": durante lo sviluppo Vite ha bisogno di più libertà.
+const SICUREZZA = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'", // colori delle icone scritti direttamente negli elementi
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "connect-src 'self'", // nessuna richiesta verso altri siti
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'none'",
+].join('; ');
+
+function regoleSicurezza(): Plugin {
+  return {
+    name: 'regole-sicurezza',
+    apply: 'build',
+    transformIndexHtml: (html) =>
+      html.replace('<head>', `<head>\n    <meta http-equiv="Content-Security-Policy" content="${SICUREZZA}" />\n    <meta name="referrer" content="no-referrer" />`),
+  };
+}
 
 export default defineConfig({
   // Percorsi relativi: l'app funziona sia in locale sia in una sottocartella
@@ -17,6 +45,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    regoleSicurezza(),
     VitePWA({
       // Il service worker si aggiorna da solo quando pubblico una nuova versione.
       registerType: 'autoUpdate',

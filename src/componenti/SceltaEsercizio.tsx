@@ -84,7 +84,7 @@ export function SceltaEsercizio({
         onChange={(e) => setCerca(e.target.value)}
         autoComplete="off"
       />
-      <ul className="elenco-scelta">
+      <ul className="elenco-scelta alto">
         {cerca.trim() && !esiste && (
           <li>
             <button type="button" className="voce-scelta crea" onClick={() => setInModifica('nuovo')}>

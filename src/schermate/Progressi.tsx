@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../dati/db';
 import type { Cardio, Esercizio, Sessione, TipoCardio } from '../dati/tipi';
-import { dataBreve, dataConGiorno, numero, passo } from '../logica/formato';
+import { dataBreve, dataConGiorno, dataLocale, numero, passo } from '../logica/formato';
 import { eserciziConStorico, seduteEsercizio, type Seduta } from '../logica/progressi';
 import { serieInBreve } from '../logica/storico';
 import { vai } from '../navigazione';
@@ -11,6 +11,10 @@ import { Grafico, type Punto } from '../componenti/Grafico';
 import { Finestra } from '../componenti/Finestra';
 import { FinestraCardio, NOMI_CARDIO, riassuntoCardio } from '../componenti/ModuloCardio';
 import { PREFISSO_SESSIONE } from './Allenati';
+import { IconChevronRight } from '@tabler/icons-react';
+import { ICONE_CARDIO, IconaEsercizio, IconaTinta } from '../componenti/Icone';
+import { lunediDi, spostaData } from '../logica/settimana';
+import { recordDellaSessione } from '../logica/record';
 
 type Misura = '1rm' | 'rip';
 
@@ -82,13 +86,27 @@ export function Progressi({ dettaglio }: { dettaglio: string | null }) {
     <>
       <h1 className="titolo-pagina">Progressi</h1>
 
+      <Panoramica sessioni={sessioni} />
+
+      <h2 className="titolo-sezione">Esercizio per esercizio</h2>
       <button type="button" className="riquadro selettore" onClick={() => setScelta(true)}>
         <span>
-          <span className="etichetta-sopra">{voce.cardio ? 'Cardio' : 'Esercizio'}</span>
-          <span className="scheda-nome">{voce.nome}</span>
-          <span className="testo-tenue piccolo">{descrizione(voce)}</span>
+          {voce.cardio ? (
+            <IconaTinta
+              icona={ICONE_CARDIO[voce.id.slice(PREFISSO_CARDIO.length) as TipoCardio].icona}
+              colore={ICONE_CARDIO[voce.id.slice(PREFISSO_CARDIO.length) as TipoCardio].colore}
+            />
+          ) : (
+            <IconaEsercizio nome={voce.nome} />
+          )}
+          <span className="testo-riga">
+            <span className="scheda-nome">{voce.nome}</span>
+            <span className="testo-tenue piccolo">{descrizione(voce)}</span>
+          </span>
         </span>
-        <span className="pulsante-testo">Cambia</span>
+        <span className="pulsante-testo">
+          Cambia <IconChevronRight size={16} aria-hidden="true" />
+        </span>
       </button>
 
       {voce.cardio ? (
@@ -131,6 +149,86 @@ export function Progressi({ dettaglio }: { dettaglio: string | null }) {
           );
         })}
       </Finestra>
+    </>
+  );
+}
+
+// Settimane mostrate nelle barre della panoramica.
+const SETTIMANE = 8;
+
+/**
+ * Panoramica in cima a Progressi: le serie di lavoro delle ultime
+ * settimane (barre) e i numeri del mese in corso.
+ */
+function Panoramica({ sessioni }: { sessioni: Sessione[] }) {
+  if (!sessioni.length) return null;
+  const questo = lunediDi(new Date());
+  const settimane = Array.from({ length: SETTIMANE }, (_, i) => {
+    const da = spostaData(questo, (i - SETTIMANE + 1) * 7);
+    const a = spostaData(da, 7);
+    const dentro = sessioni.filter((s) => s.data >= da && s.data < a);
+    return {
+      da,
+      allenamenti: dentro.length,
+      serie: dentro.reduce((t, s) => t + s.esercizi.reduce((u, e) => u + e.serie.filter((x) => !x.riscaldamento).length, 0), 0),
+    };
+  });
+  const massimo = Math.max(...settimane.map((x) => x.serie), 1);
+  const media = Math.round(settimane.slice(0, -1).reduce((t, x) => t + x.allenamenti, 0) / (SETTIMANE - 1) * 10) / 10;
+
+  // Il mese in corso.
+  const mese = dataLocale().slice(0, 7);
+  const delMese = sessioni.filter((s) => s.data.startsWith(mese));
+  const record = delMese.reduce((t, s) => t + recordDellaSessione(s, sessioni), 0);
+  const minuti = delMese.reduce((t, s) => t + s.durataMin, 0);
+  const nomeMese = new Date().toLocaleDateString('it-IT', { month: 'long' });
+
+  return (
+    <>
+      <section className="riquadro riquadro-eroe">
+        <div className="eroe-testa">
+          <span className="etichetta-sopra accento">Serie a settimana</span>
+          <span className="pastiglia blu">{numero(media)} allenamenti/sett.</span>
+        </div>
+        <div className="barre" role="img" aria-label={settimane.map((x) => `settimana del ${dataBreve(x.da)}: ${x.serie} serie`).join(', ')}>
+          {settimane.map((x, i) => (
+            <div key={x.da} className={i === SETTIMANE - 1 ? 'attuale' : ''}>
+              <b>{x.serie || ''}</b>
+              <i style={{ height: `${(x.serie / massimo) * 70}px` }} />
+              <small>{i === SETTIMANE - 1 ? 'ora' : dataBreve(x.da).replace(/ .*/, '')}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+      <div className="tre-tessere">
+        <div className="riquadro tessera">
+          <span className="etichetta-sopra">Allenamenti</span>
+          <span className="cifra-display">{delMese.length}</span>
+          <span className="tessera-sotto">a {nomeMese}</span>
+        </div>
+        <div className="riquadro tessera">
+          <span className="etichetta-sopra">Record</span>
+          <span className="cifra-display" style={record ? { color: 'var(--oro)' } : undefined}>{record}</span>
+          <span className="tessera-sotto">migliorati</span>
+        </div>
+        <div className="riquadro tessera">
+          <span className="etichetta-sopra">Tempo</span>
+          <span className="cifra-display">
+            {minuti < 60 ? (
+              <>
+                {minuti}
+                <small>min</small>
+              </>
+            ) : (
+              <>
+                {Math.floor(minuti / 60)}
+                <small>h {String(minuti % 60).padStart(2, '0')}</small>
+              </>
+            )}
+          </span>
+          <span className="tessera-sotto">in palestra</span>
+        </div>
+      </div>
     </>
   );
 }
