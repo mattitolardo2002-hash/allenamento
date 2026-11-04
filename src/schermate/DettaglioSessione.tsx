@@ -7,6 +7,7 @@ import { serieInBreve, volume } from '../logica/storico';
 import { eRecord, miglioriPerEsercizio } from '../logica/record';
 import { vai } from '../navigazione';
 import { Conferma } from '../componenti/Finestra';
+import { apertoDalCalendario } from './Calendario';
 
 /** Un allenamento passato: lettura, correzione ed eliminazione. */
 export function DettaglioSessione({ id }: { id: string }) {
@@ -109,7 +110,7 @@ export function DettaglioSessione({ id }: { id: string }) {
         onAnnulla={() => setElimina(false)}
         onConferma={async () => {
           await db.sessioni.delete(sessione.id);
-          vai('allenati');
+          torna();
         }}
       />
     </>
@@ -288,13 +289,19 @@ function ModificaSessione({
   );
 }
 
+/** Torna da dove si è arrivati: il calendario oppure la home di Allenati. */
+function torna() {
+  if (apertoDalCalendario) vai('allenati', 'calendario');
+  else vai('allenati');
+}
+
 function Indietro() {
   return (
-    <button type="button" className="pulsante-indietro" onClick={() => vai('allenati')}>
+    <button type="button" className="pulsante-indietro" onClick={torna}>
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M15 6l-6 6 6 6" />
       </svg>
-      Allenati
+      {apertoDalCalendario ? 'Calendario' : 'Allenati'}
     </button>
   );
 }

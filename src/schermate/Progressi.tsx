@@ -6,6 +6,7 @@ import { dataBreve, dataConGiorno, numero, passo } from '../logica/formato';
 import { eserciziConStorico, seduteEsercizio, type Seduta } from '../logica/progressi';
 import { serieInBreve } from '../logica/storico';
 import { vai } from '../navigazione';
+import { segnaRitorno } from './Calendario';
 import { Grafico, type Punto } from '../componenti/Grafico';
 import { Finestra } from '../componenti/Finestra';
 import { FinestraCardio, NOMI_CARDIO, riassuntoCardio } from '../componenti/ModuloCardio';
@@ -207,7 +208,9 @@ function CorpoEsercizio({
       <ul className="riquadro elenco-storico">
         {[...sedute].reverse().map((s) => (
           <li key={s.sessioneId}>
-            <button type="button" onClick={() => vai('allenati', PREFISSO_SESSIONE + s.sessioneId)}>
+            <button type="button" onClick={() => {
+                segnaRitorno(false);
+                vai('allenati', PREFISSO_SESSIONE + s.sessioneId); }}>
               <span className="storico-data">{dataConGiorno(s.data)}</span>
               <span className="storico-nome">{s.serie.map((x) => serieInBreve(x, tipo)).join(', ')}</span>
               <span className="testo-tenue piccolo">

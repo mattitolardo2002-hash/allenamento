@@ -1,28 +1,30 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, leggiImpostazione } from '../dati/db';
+import { db } from '../dati/db';
 import type { Cardio, Scheda, Sessione, TipoCardio } from '../dati/tipi';
 import { iniziaAllenamento } from '../dati/allenamento';
 import { dataBreve, dataConGiorno, dataLocale, dataLunga, orario } from '../logica/formato';
 import { lunediDi, riepilogoSettimane, settimaneDiFila } from '../logica/settimana';
 import { recordDellaSessione } from '../logica/record';
 import { vai } from '../navigazione';
+import { segnaRitorno } from './Calendario';
 import { FinestraCardio, NOMI_CARDIO, riassuntoCardio } from '../componenti/ModuloCardio';
+import { AnteprimaScheda } from '../componenti/AnteprimaScheda';
+import { FinestraObiettiviSettimana } from '../componenti/ObiettiviSettimana';
+import { useObiettivi } from '../logica/obiettivi';
+import { Calendario } from './Calendario';
 import { AllenamentoInCorso } from './AllenamentoInCorso';
 import { DettaglioSessione } from './DettaglioSessione';
 
 // Prefisso dell'indirizzo per il dettaglio di un allenamento passato: #/allenati/s:<id>
 export const PREFISSO_SESSIONE = 's:';
 
-/** Obiettivo di allenamenti a settimana, se non è stato impostato in "Altro". */
-export const OBIETTIVO_PREDEFINITO = 3;
-/** Obiettivo di sedute cardio a settimana, se non impostato. */
-export const OBIETTIVO_CARDIO_PREDEFINITO = 2;
 
 // Sezione Allenati: scelta della scheda, settimana e storico.
 // Dentro la stessa sezione si aprono l'allenamento in corso e il dettaglio di quelli passati.
 export function Allenati({ dettaglio }: { dettaglio: string | null }) {
   if (dettaglio === 'in-corso') return <AllenamentoInCorso />;
+  if (dettaglio === 'calendario') return <Calendario />;
   if (dettaglio?.startsWith(PREFISSO_SESSIONE)) {
     return <DettaglioSessione id={dettaglio.slice(PREFISSO_SESSIONE.length)} />;
   }
@@ -57,22 +59,17 @@ function Home() {
   const schede = useLiveQuery(() => db.schede.orderBy('ordine').toArray(), []);
   const sessioni = useLiveQuery(() => db.sessioni.toArray(), []);
   const esercizi = useLiveQuery(() => db.esercizi.toArray(), []);
-  const obiettivo = useLiveQuery(
-    () => leggiImpostazione('obiettivoSettimanale').then((v) => Number(v) || OBIETTIVO_PREDEFINITO),
-    [],
-  );
-  const obiettivoCardio = useLiveQuery(
-    () => leggiImpostazione('obiettivoCardio').then((v) => Number(v) || OBIETTIVO_CARDIO_PREDEFINITO),
-    [],
-  );
+  const obiettivi = useObiettivi();
   // `null` = nessun allenamento in corso (undefined = ancora in caricamento).
   const bozza = useLiveQuery(() => db.bozza.get('corrente').then((b) => b ?? null), []);
   const cardio = useLiveQuery(() => db.cardio.toArray(), []);
   const [mostrati, setMostrati] = useState(PAGINA);
   // Attività cardio aperta nella finestra (nuova o da modificare).
   const [finestraCardio, setFinestraCardio] = useState<Cardio | { tipo: TipoCardio } | null>(null);
+  const [anteprima, setAnteprima] = useState<Scheda | null>(null);
+  const [modificaObiettivi, setModificaObiettivi] = useState(false);
 
-  if (!schede || !sessioni || !esercizi || !obiettivo || !obiettivoCardio || !cardio || bozza === undefined) {
+  if (!schede || !sessioni || !esercizi || !obiettivi || !cardio || bozza === undefined) {
     return null;
   }
 
@@ -81,7 +78,9 @@ function Home() {
   const prossima = bozza ? undefined : prossimaScheda(schede, recenti);
   const altre = schede.filter((s) => s !== prossima);
   const { attuale } = riepilogoSettimane(sessioni);
-  const diFila = settimaneDiFila(sessioni, obiettivo);
+  // Obiettivi di questa settimana (possono essere diversi dai predefiniti, anche 0).
+  const { pesi: obiettivo, cardio: obiettivoCardio } = obiettivi.di(lunediDi(new Date()));
+  const diFila = settimaneDiFila(sessioni, (l) => obiettivi.di(l).pesi);
   const nomeEsercizio = (id: string) => esercizi.find((e) => e.id === id)?.nome ?? '?';
 
   // I 7 giorni della settimana corrente, con quelli in cui ti sei allenato.
@@ -147,6 +146,9 @@ function Home() {
             ))}
             {prossima.voci.length > 5 && <li className="altri">+{prossima.voci.length - 5}</li>}
           </ul>
+          <button type="button" className="pulsante-testo" onClick={() => setAnteprima(prossima)}>
+            Vedi kg e ripetizioni dell’ultima volta ›
+          </button>
           <button type="button" className="pulsante primario largo grande" onClick={() => inizia(prossima)}>
             Inizia allenamento
           </button>
@@ -154,7 +156,12 @@ function Home() {
       )}
 
       <section className="riquadro settimana" aria-label="Questa settimana">
-        <span className="etichetta-sopra">Questa settimana</span>
+        <div className="settimana-titolo">
+          <span className="etichetta-sopra">Questa settimana</span>
+          <button type="button" className="pulsante-testo" onClick={() => setModificaObiettivi(true)}>
+            Obiettivi
+          </button>
+        </div>
         {/* Due obiettivi separati: pesi e cardio. */}
         <div className="settimana-testa">
           <Obiettivo nome="Pesi" valore={attuale.allenamenti} obiettivo={obiettivo} />
@@ -192,12 +199,12 @@ function Home() {
       <ul className="riquadro elenco-avvio">
         {altre.map((s) => (
           <li key={s.id}>
-            <div>
+            <button type="button" className="apri-anteprima" onClick={() => setAnteprima(s)}>
               <span className="storico-nome">{s.nome}</span>
               <span className="testo-tenue piccolo">
-                {s.voci.length === 1 ? '1 esercizio' : `${s.voci.length} esercizi`}
+                {s.voci.length === 1 ? '1 esercizio' : `${s.voci.length} esercizi`} · vedi ultima volta
               </span>
-            </div>
+            </button>
             <button type="button" className="pulsante piccolo-pulsante" disabled={!!bozza} onClick={() => inizia(s)}>
               Inizia
             </button>
@@ -242,7 +249,12 @@ function Home() {
         })}
       </ul>
 
-      <h2 className="titolo-sezione">Ultimi allenamenti</h2>
+      <div className="titolo-con-azione">
+        <h2 className="titolo-sezione">Ultimi allenamenti</h2>
+        <button type="button" className="pulsante-testo" onClick={() => vai('allenati', 'calendario')}>
+          Calendario ›
+        </button>
+      </div>
       {storico.length === 0 ? (
         <section className="riquadro vuoto">
           <p>Ancora nessun allenamento registrato.</p>
@@ -276,7 +288,9 @@ function Home() {
             const record = recordDellaSessione(s!, sessioni);
             return (
               <li key={s!.id}>
-                <button type="button" className="riquadro" onClick={() => vai('allenati', PREFISSO_SESSIONE + s!.id)}>
+                <button type="button" className="riquadro" onClick={() => {
+                segnaRitorno(false);
+                vai('allenati', PREFISSO_SESSIONE + s!.id); }}>
                   {tessera}
                   <span className="sessione-testo">
                     <span className="storico-nome">{s!.schedaNome}</span>
@@ -302,6 +316,16 @@ function Home() {
       )}
 
       <FinestraCardio attivita={finestraCardio} onChiudi={() => setFinestraCardio(null)} />
+      <AnteprimaScheda
+        scheda={anteprima}
+        puoiIniziare={!bozza}
+        onChiudi={() => setAnteprima(null)}
+        onInizia={(s) => {
+          setAnteprima(null);
+          inizia(s);
+        }}
+      />
+      <FinestraObiettiviSettimana aperta={modificaObiettivi} onChiudi={() => setModificaObiettivi(false)} />
     </>
   );
 }
@@ -319,16 +343,26 @@ function Obiettivo({
   cardio?: boolean;
 }) {
   return (
-    <div className={`obiettivo-settimana${cardio ? ' cardio' : ''}`}>
+    <div className={`obiettivo-settimana${cardio ? ' cardio' : ''}${obiettivo === 0 ? ' pausa' : ''}`}>
       <Anello valore={valore} obiettivo={obiettivo} />
       <div>
         <span className="obiettivo-nome">{nome}</span>
-        <span className="cifra-display">
-          {valore}
-          <small>/{obiettivo}</small>
-        </span>
+        {obiettivo === 0 ? (
+          <span className="cifra-display">Pausa</span>
+        ) : (
+          <span className="cifra-display">
+            {valore}
+            <small>/{obiettivo}</small>
+          </span>
+        )}
         <span className="testo-tenue piccolo">
-          {valore >= obiettivo ? 'Fatto ✓' : `Ancora ${obiettivo - valore}`}
+          {obiettivo === 0
+            ? valore > 0
+              ? `Fatte comunque: ${valore}`
+              : 'Settimana di riposo'
+            : valore >= obiettivo
+              ? 'Fatto ✓'
+              : `Ancora ${obiettivo - valore}`}
         </span>
       </div>
     </div>
@@ -339,7 +373,7 @@ function Obiettivo({
 function Anello({ valore, obiettivo }: { valore: number; obiettivo: number }) {
   const r = 26;
   const giro = 2 * Math.PI * r;
-  const quota = Math.min(valore / obiettivo, 1);
+  const quota = obiettivo === 0 ? 0 : Math.min(valore / obiettivo, 1);
   return (
     <svg className="anello" viewBox="0 0 64 64" aria-hidden="true">
       <circle cx="32" cy="32" r={r} className="anello-fondo" />

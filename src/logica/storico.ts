@@ -3,6 +3,8 @@ import { dataBreve, numero } from './formato';
 
 export interface UltimaVolta {
   data: string;
+  /** In quale allenamento è stato fatto (es. "Allenamento 1"). */
+  schedaNome: string;
   /** Serie di lavoro dell'ultima seduta (senza il riscaldamento). */
   serie: SerieSvolta[];
 }
@@ -18,7 +20,7 @@ export function ultimeVolte(sessioni: Sessione[]): Map<string, UltimaVolta> {
     for (const e of s.esercizi) {
       if (mappa.has(e.esercizioId)) continue;
       const serie = e.serie.filter((x) => !x.riscaldamento);
-      if (serie.length) mappa.set(e.esercizioId, { data: s.data, serie });
+      if (serie.length) mappa.set(e.esercizioId, { data: s.data, schedaNome: s.schedaNome, serie });
     }
   }
   return mappa;
@@ -30,11 +32,16 @@ export function serieInBreve(s: { kg: number; rip: number }, tipo: Esercizio['ti
   return `${tipo === 'zavorra' ? '+' : ''}${numero(s.kg)}×${s.rip}`;
 }
 
-/** "Ultima volta · 28 ott: 60×10, 60×9, 60×8". */
-export function testoUltimaVolta(u: UltimaVolta, tipo: Esercizio['tipo']): string {
+/** "60×10, 60×9, 60×8" (con " rip" se sono solo ripetizioni). */
+export function serieUltimaVolta(u: UltimaVolta, tipo: Esercizio['tipo']): string {
   const serie = u.serie.map((s) => serieInBreve(s, tipo)).join(', ');
   const unita = tipo === 'corpo' || u.serie.every((s) => tipo === 'zavorra' && s.kg === 0) ? ' rip' : '';
-  return `Ultima volta · ${dataBreve(u.data)}: ${serie}${unita}`;
+  return serie + unita;
+}
+
+/** "Ultima volta · Allenamento 1, 28 ott: 60×10, 60×9, 60×8". */
+export function testoUltimaVolta(u: UltimaVolta, tipo: Esercizio['tipo']): string {
+  return `Ultima volta · ${u.schedaNome}, ${dataBreve(u.data)}: ${serieUltimaVolta(u, tipo)}`;
 }
 
 /** Volume = somma di kg × ripetizioni delle serie di lavoro. */

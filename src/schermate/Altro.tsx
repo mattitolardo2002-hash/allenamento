@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, leggiImpostazione, nuovoId, scriviImpostazione } from '../dati/db';
-import { OBIETTIVO_CARDIO_PREDEFINITO, OBIETTIVO_PREDEFINITO } from './Allenati';
+import { PREDEFINITI } from '../logica/obiettivi';
 import type { Esercizio } from '../dati/tipi';
 import { consegnaFile, preparaEsportazione, segnaEsportati, type Backup } from '../dati/esportazione';
 import { importaBackup, leggiBackup } from '../dati/importazione';
@@ -58,11 +58,11 @@ function StatoBackup() {
 /** Obiettivi settimanali (pesi e cardio), usati per gli anelli nella home. */
 function Obiettivo() {
   const pesi = useLiveQuery(
-    () => leggiImpostazione('obiettivoSettimanale').then((v) => Number(v) || OBIETTIVO_PREDEFINITO),
+    () => leggiImpostazione('obiettivoSettimanale').then((v) => Number(v) || PREDEFINITI.pesi),
     [],
   );
   const cardio = useLiveQuery(
-    () => leggiImpostazione('obiettivoCardio').then((v) => Number(v) || OBIETTIVO_CARDIO_PREDEFINITO),
+    () => leggiImpostazione('obiettivoCardio').then((v) => Number(v) || PREDEFINITI.cardio),
     [],
   );
   if (!pesi || !cardio) return null;

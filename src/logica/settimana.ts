@@ -44,17 +44,29 @@ export function riepilogoSettimane(sessioni: Sessione[], oggi = new Date()) {
 }
 
 /**
- * Settimane di fila in cui hai raggiunto l'obiettivo.
- * La settimana in corso conta solo se l'obiettivo è già raggiunto
- * (altrimenti non interrompe la serie: c'è ancora tempo).
+ * Settimane di fila in cui hai raggiunto l'obiettivo dei pesi.
+ * - La settimana in corso conta solo se l'obiettivo è già raggiunto
+ *   (altrimenti non interrompe la serie: c'è ancora tempo).
+ * - Una settimana con obiettivo 0 (pausa) non conta e non interrompe la serie.
  */
-export function settimaneDiFila(sessioni: Sessione[], obiettivo: number, oggi = new Date()): number {
+export function settimaneDiFila(
+  sessioni: Sessione[],
+  obiettivoDi: (lunedi: string) => number,
+  oggi = new Date(),
+): number {
   let lunedi = lunediDi(oggi);
   const conta = (da: string) => sessioni.filter((s) => s.data >= da && s.data < sposta(da, 7)).length;
-  let serie = conta(lunedi) >= obiettivo ? 1 : 0;
-  for (;;) {
+  const obiettivoOra = obiettivoDi(lunedi);
+  let serie = obiettivoOra > 0 && conta(lunedi) >= obiettivoOra ? 1 : 0;
+  // Si torna indietro una settimana alla volta (al massimo 10 anni).
+  for (let i = 0; i < 520; i++) {
     lunedi = sposta(lunedi, -7);
+    const obiettivo = obiettivoDi(lunedi);
+    if (obiettivo === 0) continue;
     if (conta(lunedi) < obiettivo) return serie;
     serie++;
   }
+  return serie;
 }
+
+export { sposta as spostaData };
