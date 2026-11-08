@@ -12,9 +12,9 @@ import { vai } from '../navigazione';
 import { segnaRitorno } from './Calendario';
 import { FinestraCardio, NOMI_CARDIO, riassuntoCardio } from '../componenti/ModuloCardio';
 import { AnteprimaScheda } from '../componenti/AnteprimaScheda';
-import { FinestraNuovo, inizia } from '../componenti/FinestraNuovo';
+import { inizia } from '../componenti/FinestraNuovo';
 import { FinestraObiettiviSettimana } from '../componenti/ObiettiviSettimana';
-import { ICONE_CARDIO, IconaEsercizio, IconaNumero, IconaTinta } from '../componenti/Icone';
+import { ICONE_CARDIO, IconaNumero, IconaTinta } from '../componenti/Icone';
 import { useObiettivi } from '../logica/obiettivi';
 import { Calendario } from './Calendario';
 import { AllenamentoInCorso } from './AllenamentoInCorso';
@@ -69,7 +69,6 @@ function Home() {
   const [finestraCardio, setFinestraCardio] = useState<Cardio | { tipo: TipoCardio } | null>(null);
   const [anteprima, setAnteprima] = useState<Scheda | null>(null);
   const [modificaObiettivi, setModificaObiettivi] = useState(false);
-  const [scegli, setScegli] = useState(false);
   // Scheda scelta per oggi toccando la rotazione (null = la prossima).
   const [sceltaId, setSceltaId] = useState<string | null>(null);
 
@@ -158,7 +157,6 @@ function Home() {
           ultimaId={ultima?.schedaId ?? undefined}
           nomeEsercizio={nomeEsercizio}
           onScegliRotazione={(id) => setSceltaId(id === prossima?.id ? null : id)}
-          onScegliAltro={() => setScegli(true)}
           onAnteprima={() => setAnteprima(oggiScelta)}
         />
       ) : (
@@ -215,6 +213,13 @@ function Home() {
             </li>
           ))}
         </ol>
+        {attuale.serie === 0 && minutiCardio === 0 ? (
+          <p className="settimana-vuota">
+            {diFila > 0
+              ? `Settimana nuova: allenati per tenere ${diFila === 1 ? 'la settimana' : `le ${diFila} settimane`} di fila.`
+              : 'Settimana nuova: inizia oggi e parte la serie di settimane di fila.'}
+          </p>
+        ) : (
         <dl className="settimana-cifre">
           <div>
             <dt>Serie</dt>
@@ -229,6 +234,7 @@ function Home() {
             <dd>{diFila} sett.</dd>
           </div>
         </dl>
+        )}
       </section>
 
       {pesate.length > 0 && <PesoMini pesate={pesate} />}
@@ -387,7 +393,6 @@ function Home() {
           inizia(s);
         }}
       />
-      <FinestraNuovo aperta={scegli} soloPesi onChiudi={() => setScegli(false)} />
       <FinestraObiettiviSettimana aperta={modificaObiettivi} onChiudi={() => setModificaObiettivi(false)} />
     </>
   );
@@ -406,7 +411,6 @@ function Eroe({
   ultimaId,
   nomeEsercizio,
   onScegliRotazione,
-  onScegliAltro,
   onAnteprima,
 }: {
   scheda: Scheda;
@@ -416,13 +420,14 @@ function Eroe({
   ultimaId?: string;
   nomeEsercizio: (id: string) => string;
   onScegliRotazione: (id: string) => void;
-  onScegliAltro: () => void;
   onAnteprima: () => void;
 }) {
   const ePrevista = scheda.id === prossimaId;
   const fatta = ultimaDellaScheda(scheda.id, sessioni);
   const minuti = durataTipica(scheda.id, sessioni);
-  const nomi = scheda.voci.map((v) => nomeEsercizio(v.esercizioId));
+  // Nell'anteprima si vedono i primi esercizi; gli altri con "Tutti gli esercizi".
+  const visibili = scheda.voci.slice(0, 3);
+  const altri = scheda.voci.length - visibili.length;
   const descrizione = [
     scheda.voci.length === 1 ? '1 esercizio' : `${scheda.voci.length} esercizi`,
     minuti && `circa ${minuti} min`,
@@ -441,9 +446,6 @@ function Eroe({
           </span>
         )}
       </div>
-      <h2 className="nome-display grande">{scheda.nome}</h2>
-      <p className="eroe-sotto">{descrizione}</p>
-
       {schede.length > 1 && (
         <div className="rotazione" role="group" aria-label="Rotazione delle schede: tocca per scegliere">
           {schede.map((s, i) => (
@@ -462,29 +464,29 @@ function Eroe({
         </div>
       )}
 
-      {nomi.length > 0 && (
-        <div className="icone-esercizi" aria-label={`Esercizi: ${nomi.join(', ')}`}>
-          {nomi.slice(0, 4).map((n, i) => (
-            <IconaEsercizio key={i} nome={n} misura={30} />
-          ))}
-          <span className="testo-tenue">
-            {nomi.slice(0, 2).join(', ')}
-            {nomi.length > 2 ? ` +${nomi.length - 2}` : ''}
-          </span>
-        </div>
-      )}
+      <h2 className="nome-display grande">{scheda.nome}</h2>
+      <p className="eroe-sotto">{descrizione}</p>
 
-      <div className="eroe-azioni">
-        <button type="button" className="pulsante primario grande" onClick={() => inizia(scheda)}>
-          <IconPlayerPlay size={18} stroke={2} aria-hidden="true" />
-          Inizia
-        </button>
-        <button type="button" className="pulsante vetro grande" onClick={onScegliAltro}>
-          Scegli un altro
-        </button>
-      </div>
+      {visibili.length > 0 && (
+        <ul className="eroe-esercizi">
+          {visibili.map((v, i) => (
+            <li key={i}>
+              <span>{nomeEsercizio(v.esercizioId)}</span>
+              <span>
+                {v.serie}×{v.rip || '—'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       <button type="button" className="pulsante-testo eroe-link" onClick={onAnteprima}>
-        Vedi i kg dell’ultima volta <IconChevronRight size={16} aria-hidden="true" />
+        {altri > 0 ? `+ altri ${altri} · kg dell’ultima volta` : 'Vedi i kg dell’ultima volta'}
+        <IconChevronRight size={16} aria-hidden="true" />
+      </button>
+
+      <button type="button" className="pulsante primario grande largo eroe-inizia" onClick={() => inizia(scheda)}>
+        <IconPlayerPlay size={18} stroke={2} aria-hidden="true" />
+        Inizia
       </button>
     </section>
   );

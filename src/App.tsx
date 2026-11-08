@@ -15,6 +15,8 @@ export function App() {
   const { sezione, dettaglio } = usePosizione();
   const inCorso = useLiveQuery(() => db.bozza.get('corrente').then((b) => !!b), []) ?? false;
   const [menuNuovo, setMenuNuovo] = useState(false);
+  // Durante l'allenamento la barra in basso sparisce: al suo posto c'è il recupero.
+  const inAllenamento = sezione === 'allenati' && dettaglio === 'in-corso';
 
   // All'apertura dell'app: se c'era un allenamento a metà, si riparte da lì.
   useEffect(() => {
@@ -25,7 +27,7 @@ export function App() {
 
   return (
     <>
-      <main className="contenuto">
+      <main className={`contenuto${inAllenamento ? ' senza-nav' : ''}`}>
         {/* La chiave cambia a ogni schermata: così parte la dissolvenza d'entrata. */}
         <div className="pagina" key={`${sezione}/${dettaglio ?? ''}`}>
           {sezione === 'allenati' && <Allenati dettaglio={dettaglio} />}
@@ -35,12 +37,14 @@ export function App() {
           {sezione === 'altro' && <Altro />}
         </div>
       </main>
-      <BarraNavigazione
-        attiva={sezione}
-        inCorso={inCorso}
-        onScegli={(id) => vai(id)}
-        onPiu={() => (inCorso ? vai('allenati', 'in-corso') : setMenuNuovo(true))}
-      />
+      {!inAllenamento && (
+        <BarraNavigazione
+          attiva={sezione}
+          inCorso={inCorso}
+          onScegli={(id) => vai(id)}
+          onPiu={() => (inCorso ? vai('allenati', 'in-corso') : setMenuNuovo(true))}
+        />
+      )}
       <FinestraNuovo aperta={menuNuovo} onChiudi={() => setMenuNuovo(false)} />
     </>
   );

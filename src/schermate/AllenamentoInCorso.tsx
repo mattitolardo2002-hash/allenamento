@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../dati/db';
 import type { Bozza, Esercizio, EsercizioBozza, SerieBozza } from '../dati/tipi';
@@ -11,6 +11,7 @@ import { PREFISSO_FINE } from './Allenati';
 import { Conferma, Finestra } from '../componenti/Finestra';
 import { NOMI_TIPO, SceltaEsercizio } from '../componenti/SceltaEsercizio';
 import { IconaEsercizio } from '../componenti/Icone';
+import { avviaRecupero, BarraRecupero, fermaRecupero } from '../componenti/Recupero';
 
 /**
  * Schermata usata in palestra: per ogni esercizio una riga per serie
@@ -25,6 +26,10 @@ export function AllenamentoInCorso() {
   const [termina, setTermina] = useState(false);
   const [annulla, setAnnulla] = useState(false);
   const [daRimuovere, setDaRimuovere] = useState<number | null>(null);
+  // Esercizio aperto scelto a mano (null = il primo non ancora finito).
+  const [scelto, setScelto] = useState<number | null>(null);
+  // Esercizio di cui è aperto il menu ⋯.
+  const [menu, setMenu] = useState<number | null>(null);
 
   // La bozza si legge una volta; da lì in poi comanda lo stato qui sotto.
   useEffect(() => {
@@ -35,6 +40,19 @@ export function AllenamentoInCorso() {
   const migliori = useMemo(() => miglioriPerEsercizio(sessioni ?? []), [sessioni]);
   const anagrafica = useMemo(() => new Map((esercizi ?? []).map((e) => [e.id, e])), [esercizi]);
   const nomi = useMemo(() => new Map((esercizi ?? []).map((e) => [e.id, e.nome])), [esercizi]);
+
+  const attivo = bozza ? esercizioAttivo(bozza, scelto) : null;
+  // Quando si passa a un altro esercizio lo si porta in vista (non all'apertura).
+  const precedente = useRef<number | null>(null);
+  useEffect(() => {
+    const prima = precedente.current;
+    precedente.current = attivo;
+    // Niente scorrimento all'apertura (da "nessuno" al primo) o se non cambia.
+    if (prima === null || attivo === null || prima === attivo) return;
+    requestAnimationFrame(() =>
+      document.getElementById(`esercizio-${attivo}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    );
+  }, [attivo]);
 
   if (bozza === undefined || !esercizi || !sessioni) return null;
   if (bozza === null) {
@@ -90,6 +108,13 @@ export function AllenamentoInCorso() {
 
     segnaErrore(ei, '');
     cambiaSerie(ei, si, { kg: tipo === 'corpo' ? '' : numero(kg), rip: String(rip), fatta: true });
+
+    // Esercizio finito: si passa da soli al prossimo da fare.
+    const restanti = e.serie.filter((x, i) => i !== si && !x.fatta && !x.riscaldamento).length;
+    if (restanti === 0 && !s.riscaldamento) setScelto(null);
+    // Recupero, tranne dopo l'ultima serie dell'allenamento.
+    const daFare = bozza.esercizi.some((x, i) => x.serie.some((y, j) => !y.fatta && !(i === ei && j === si)));
+    if (daFare) avviaRecupero();
   };
 
   const svolti = eserciziSvolti(bozza, nomi);
@@ -102,22 +127,39 @@ export function AllenamentoInCorso() {
     e.serie.some((s) => s.fatta && !s.riscaldamento && eRecord(serieNumerica(s), migliori.get(e.esercizioId))),
   ).length;
 
+  const lavoroFatte = lavoro.filter((s) => s.fatta).length;
+  // Primo esercizio non finito dopo quello aperto: segnato come "Poi".
+  const poi = bozza.esercizi.findIndex((e, i) => i > (attivo ?? -1) && !completato(e));
+  const eMenu = menu !== null ? bozza.esercizi[menu] : null;
+  const altMenu = eMenu?.alternativaId ? anagrafica.get(eMenu.alternativaId) : undefined;
+
   return (
     <>
       <header className="testata-allenamento">
-        <div>
-          <h1>{bozza.schedaNome}</h1>
+        <button type="button" className="pulsante-icona" aria-label="Torna ad Allenati" onClick={() => vai('allenati')}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <div className="testata-centro">
+          <h1>
+            {bozza.schedaNome}
+            {attivo !== null && ` · ${attivo + 1} di ${bozza.esercizi.length}`}
+          </h1>
           <p className="testata-dati">
             <Cronometro inizio={bozza.inizio} />
-            <span className="testo-tenue">
-              {lavoro.filter((s) => s.fatta).length}/{lavoro.length} serie
-              {recordOggi > 0 && <span className="testo-record"> · ★ {recordOggi}</span>}
-            </span>
+            {recordOggi > 0 && <span className="testo-record">★ {recordOggi}</span>}
           </p>
         </div>
-        <button type="button" className="pulsante primario" onClick={() => setTermina(true)}>
-          Termina
-        </button>
+        <div className="testata-destra">
+          <span className="testata-serie">
+            {lavoroFatte}
+            <small>/{lavoro.length} serie</small>
+          </span>
+          <button type="button" className="pulsante-testo" onClick={() => setTermina(true)}>
+            Fine ›
+          </button>
+        </div>
         <div
           className="barra-avanzamento"
           role="progressbar"
@@ -139,6 +181,16 @@ export function AllenamentoInCorso() {
         <span>Riscaldamento fatto</span>
       </label>
 
+      {attivo === null && bozza.esercizi.length > 0 && (
+        <section className="riquadro tutto-fatto">
+          <span className="etichetta-sopra">Tutto fatto</span>
+          <p>Hai completato tutti gli esercizi. Premi “Fine” per salvare.</p>
+          <button type="button" className="pulsante primario largo" onClick={() => setTermina(true)}>
+            Fine allenamento
+          </button>
+        </section>
+      )}
+
       <ol className="elenco-esercizi">
         {bozza.esercizi.map((e, ei) => {
           const es = anagrafica.get(e.esercizioId);
@@ -146,17 +198,49 @@ export function AllenamentoInCorso() {
           const ultima = ultime.get(e.esercizioId);
           const diLavoro = e.serie.filter((s) => !s.riscaldamento);
           const fatte = diLavoro.filter((s) => s.fatta).length;
-          const completato = diLavoro.length > 0 && fatte === diLavoro.length;
+          const finito = completato(e);
+
+          // Esercizi non aperti: una riga compatta, toccandola si apre.
+          if (ei !== attivo) {
+            return (
+              <li key={ei} id={`esercizio-${ei}`}>
+                <button
+                  type="button"
+                  className={`riga-esercizio${finito ? ' finito' : ''}`}
+                  onClick={() => setScelto(ei)}
+                >
+                  <span className="riga-esercizio-segno" aria-hidden="true">
+                    {finito ? '✓' : ei + 1}
+                  </span>
+                  <span className="riga-esercizio-nome">
+                    {ei === poi && <b>Poi · </b>}
+                    {es?.nome ?? '?'}
+                  </span>
+                  <span className="riga-esercizio-dati">{riassunto(e, es?.tipo ?? 'carico', fatte)}</span>
+                </button>
+              </li>
+            );
+          }
+
           return (
-            <li key={ei} className={`riquadro esercizio${completato ? ' completato' : ''}`}>
+            <li key={ei} id={`esercizio-${ei}`} className="riquadro esercizio attivo">
               <div className="esercizio-testa">
                 <div className="esercizio-titolo">
                   <IconaEsercizio nome={es?.nome ?? ''} />
                   <h2>{es?.nome ?? '?'}</h2>
                   <span className="conteggio">
-                    {completato ? '✓ ' : ''}
                     {fatte}/{diLavoro.length}
                   </span>
+                  <button
+                    type="button"
+                    className="pulsante-icona"
+                    aria-label={`Altre azioni per ${es?.nome ?? 'l’esercizio'}`}
+                    onClick={() => setMenu(ei)}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M6 12h.01M12 12h.01M18 12h.01" strokeWidth="3" />
+                    </svg>
+                  </button>
                 </div>
                 <p className="testo-tenue piccolo">
                   {[
@@ -195,55 +279,6 @@ export function AllenamentoInCorso() {
               />
 
               {errori[ei] && <p className="errore">{errori[ei]}</p>}
-
-              <div className="esercizio-azioni">
-                <button
-                  type="button"
-                  className="pulsante-testo"
-                  onClick={() => cambiaEsercizio(ei, (x) => ({ ...x, serie: [...x.serie, serieVuota()] }))}
-                >
-                  + Serie
-                </button>
-                <button
-                  type="button"
-                  className="pulsante-testo"
-                  disabled={!e.serie.some((s) => !s.fatta)}
-                  onClick={() =>
-                    cambiaEsercizio(ei, (x) => {
-                      // Toglie l'ultima serie non ancora confermata.
-                      const i = x.serie.map((s) => s.fatta).lastIndexOf(false);
-                      return { ...x, serie: x.serie.filter((_, j) => j !== i) };
-                    })
-                  }
-                >
-                  − Serie
-                </button>
-                <button
-                  type="button"
-                  className="pulsante-testo"
-                  onClick={() =>
-                    cambiaEsercizio(ei, (x) => {
-                      // Il riscaldamento va prima delle serie di lavoro.
-                      const dopo = x.serie.findIndex((s) => !s.riscaldamento);
-                      const serie = [...x.serie];
-                      serie.splice(dopo === -1 ? serie.length : dopo, 0, serieVuota(true));
-                      return { ...x, serie };
-                    })
-                  }
-                >
-                  + Risc.
-                </button>
-                <button
-                  type="button"
-                  className="pulsante-testo pericolo"
-                  onClick={() => {
-                    if (e.serie.some((s) => s.fatta)) setDaRimuovere(ei);
-                    else salva({ ...bozza, esercizi: bozza.esercizi.filter((_, i) => i !== ei) });
-                  }}
-                >
-                  Rimuovi
-                </button>
-              </div>
             </li>
           );
         })}
@@ -255,6 +290,83 @@ export function AllenamentoInCorso() {
       <button type="button" className="pulsante largo pericolo-tenue" onClick={() => setAnnulla(true)}>
         Annulla allenamento
       </button>
+
+      <Finestra aperta={menu !== null} titolo={eMenu ? (anagrafica.get(eMenu.esercizioId)?.nome ?? 'Esercizio') : ''} onChiudi={() => setMenu(null)}>
+        {eMenu && menu !== null && (
+          <div className="fila-pulsanti verticale menu-esercizio">
+            <button
+              type="button"
+              className="pulsante largo"
+              onClick={() => {
+                cambiaEsercizio(menu, (x) => ({ ...x, serie: [...x.serie, serieVuota()] }));
+                setMenu(null);
+              }}
+            >
+              + Aggiungi una serie
+            </button>
+            <button
+              type="button"
+              className="pulsante largo"
+              disabled={!eMenu.serie.some((s) => !s.fatta)}
+              onClick={() => {
+                cambiaEsercizio(menu, (x) => {
+                  // Toglie l'ultima serie non ancora confermata.
+                  const i = x.serie.map((s) => s.fatta).lastIndexOf(false);
+                  return { ...x, serie: x.serie.filter((_, j) => j !== i) };
+                });
+                setMenu(null);
+              }}
+            >
+              − Togli una serie
+            </button>
+            <button
+              type="button"
+              className="pulsante largo"
+              onClick={() => {
+                cambiaEsercizio(menu, (x) => {
+                  // Il riscaldamento va prima delle serie di lavoro.
+                  const dopo = x.serie.findIndex((s) => !s.riscaldamento);
+                  const serie = [...x.serie];
+                  serie.splice(dopo === -1 ? serie.length : dopo, 0, serieVuota(true));
+                  return { ...x, serie };
+                });
+                setMenu(null);
+              }}
+            >
+              + Serie di riscaldamento
+            </button>
+            {altMenu && (
+              <button
+                type="button"
+                className="pulsante largo"
+                onClick={() => {
+                  cambiaEsercizio(menu, (x) => ({ ...x, esercizioId: altMenu.id, alternativaId: x.esercizioId }));
+                  setMenu(null);
+                }}
+              >
+                ⇄ Fai invece {altMenu.nome}
+              </button>
+            )}
+            <button
+              type="button"
+              className="pulsante largo pericolo-tenue"
+              onClick={() => {
+                const ei = menu;
+                setMenu(null);
+                if (eMenu.serie.some((s) => s.fatta)) setDaRimuovere(ei);
+                else {
+                  salva({ ...bozza, esercizi: bozza.esercizi.filter((_, i) => i !== ei) });
+                  setScelto(null);
+                }
+              }}
+            >
+              Rimuovi esercizio
+            </button>
+          </div>
+        )}
+      </Finestra>
+
+      <BarraRecupero />
 
       <SceltaEsercizio
         aperta={aggiungi}
@@ -276,6 +388,7 @@ export function AllenamentoInCorso() {
         onChiudi={() => setTermina(false)}
         onSalva={async (rpe, note) => {
           const id = await concludiAllenamento(bozza, nomi, rpe, note);
+          fermaRecupero();
           vai('allenati', PREFISSO_FINE + id);
         }}
       />
@@ -288,6 +401,7 @@ export function AllenamentoInCorso() {
         onAnnulla={() => setAnnulla(false)}
         onConferma={async () => {
           await annullaAllenamento();
+          fermaRecupero();
           vai('allenati');
         }}
       />
@@ -301,10 +415,34 @@ export function AllenamentoInCorso() {
         onConferma={() => {
           salva({ ...bozza, esercizi: bozza.esercizi.filter((_, i) => i !== daRimuovere) });
           setDaRimuovere(null);
+          setScelto(null);
         }}
       />
     </>
   );
+}
+
+/** Vero se tutte le serie di lavoro dell'esercizio sono confermate. */
+function completato(e: EsercizioBozza): boolean {
+  const lavoro = e.serie.filter((s) => !s.riscaldamento);
+  return lavoro.length > 0 && lavoro.every((s) => s.fatta);
+}
+
+/** Esercizio da mostrare aperto: quello scelto a mano, altrimenti il primo non finito. */
+function esercizioAttivo(bozza: Bozza, scelto: number | null): number | null {
+  if (scelto !== null && scelto < bozza.esercizi.length) return scelto;
+  const i = bozza.esercizi.findIndex((e) => !completato(e));
+  return i === -1 ? null : i;
+}
+
+/** Testo a destra delle righe compatte: cosa prevede, oppure cosa hai fatto. */
+function riassunto(e: EsercizioBozza, tipo: Esercizio['tipo'], fatte: number): string {
+  const lavoro = e.serie.filter((s) => !s.riscaldamento);
+  if (fatte === 0) return e.obiettivo ? `${e.obiettivo.serie}×${e.obiettivo.rip || '—'}` : `${lavoro.length} serie`;
+  const confermate = lavoro.filter((s) => s.fatta);
+  const kg = Math.max(...confermate.map((s) => leggiNumero(s.kg) ?? 0));
+  const testo = fatte < lavoro.length ? `${fatte}/${lavoro.length} serie` : `${fatte} serie`;
+  return tipo !== 'corpo' && kg > 0 ? `${testo} · ${tipo === 'zavorra' ? '+' : ''}${numero(kg)} kg` : testo;
 }
 
 /**
@@ -351,7 +489,7 @@ function TabellaSerie({
   return (
     <div className={`tabella-serie${conKg ? '' : ' senza-kg'}`}>
       <div className="riga-serie intestazione">
-        <span>Serie</span>
+        <span aria-label="Serie">#</span>
         {conKg && <span>{tipo === 'zavorra' ? 'Zavorra' : perLato ? 'Kg/lato' : 'Kg'}</span>}
         <span>Rip</span>
         <span />
@@ -367,25 +505,27 @@ function TabellaSerie({
               {record ? '★' : s.riscaldamento ? 'R' : numeroLavoro}
             </span>
             {conKg && (
-              <input
-                className="campo"
-                inputMode="decimal"
-                aria-label={`Kg serie ${si + 1}`}
-                value={s.kg}
+              <CampoPasso
+                etichetta={`kg serie ${si + 1}`}
+                decimali
+                valore={s.kg}
+                suggerito={consiglio?.kg}
+                passo={PASSO_KG}
+                minimo={0}
                 placeholder={consiglio ? numero(consiglio.kg) : tipo === 'zavorra' ? '0' : ''}
-                disabled={s.fatta}
-                onChange={(ev) => onCambia(si, { kg: ev.target.value })}
+                bloccato={s.fatta}
+                onCambia={(kg) => onCambia(si, { kg })}
               />
             )}
-            <input
-              className="campo"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              aria-label={`Ripetizioni serie ${si + 1}`}
-              value={s.rip}
+            <CampoPasso
+              etichetta={`ripetizioni serie ${si + 1}`}
+              valore={s.rip}
+              suggerito={consiglio?.rip}
+              passo={1}
+              minimo={1}
               placeholder={consiglio ? String(consiglio.rip) : ''}
-              disabled={s.fatta}
-              onChange={(ev) => onCambia(si, { rip: ev.target.value })}
+              bloccato={s.fatta}
+              onCambia={(rip) => onCambia(si, { rip })}
             />
             <button
               type="button"
@@ -401,6 +541,62 @@ function TabellaSerie({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/** Di quanto cambiano i kg con − e +. */
+const PASSO_KG = 2.5;
+
+/**
+ * Campo numerico con − e + ai lati: si usa con una mano, senza tastiera.
+ * Se il campo è vuoto si parte dal valore suggerito (quello in grigio).
+ */
+function CampoPasso({
+  etichetta,
+  valore,
+  suggerito,
+  passo,
+  minimo,
+  decimali = false,
+  placeholder,
+  bloccato,
+  onCambia,
+}: {
+  etichetta: string;
+  valore: string;
+  suggerito?: number;
+  passo: number;
+  minimo: number;
+  decimali?: boolean;
+  placeholder: string;
+  bloccato: boolean;
+  onCambia: (testo: string) => void;
+}) {
+  const sposta = (verso: 1 | -1) => {
+    const base = leggiNumero(valore) ?? suggerito ?? 0;
+    // Senza nulla da cui partire, il + parte dal minimo utile.
+    const nuovo = Math.max(minimo, Math.round((base + verso * passo) * 100) / 100);
+    onCambia(numero(nuovo));
+  };
+  return (
+    <div className="campo-passo">
+      <button type="button" tabIndex={-1} aria-label={`Meno ${etichetta}`} disabled={bloccato} onClick={() => sposta(-1)}>
+        −
+      </button>
+      <input
+        className="campo"
+        inputMode={decimali ? 'decimal' : 'numeric'}
+        pattern={decimali ? undefined : '[0-9]*'}
+        aria-label={etichetta.replace(/^./, (c) => c.toUpperCase())}
+        value={valore}
+        placeholder={placeholder}
+        disabled={bloccato}
+        onChange={(ev) => onCambia(ev.target.value)}
+      />
+      <button type="button" tabIndex={-1} aria-label={`Più ${etichetta}`} disabled={bloccato} onClick={() => sposta(1)}>
+        +
+      </button>
     </div>
   );
 }

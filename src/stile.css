@@ -380,7 +380,16 @@ input[type='date'].campo { padding-right: 10px; }
 .icone-esercizi .testo-tenue { margin-left: 4px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .eroe-azioni { display: flex; gap: 8px; }
 .eroe-azioni > * { flex: 1; white-space: nowrap; padding: 0 12px; }
-.eroe-link { display: flex; align-items: center; gap: 4px; margin: 10px 0 -6px; }
+.eroe-link { display: flex; align-items: center; gap: 4px; margin: 2px 0 6px; font-size: 13.5px; }
+.riquadro-eroe .rotazione { margin: 14px 0 16px; }
+/* Primi esercizi della scheda, con serie × ripetizioni */
+.eroe-esercizi { list-style: none; margin: 12px 0 2px; padding: 0; }
+.eroe-esercizi li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--bordo); font-size: 14.5px; }
+.eroe-esercizi li span:first-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eroe-esercizi li span:last-child { flex: none; font-family: var(--numeri); font-size: 16px; font-weight: 600; color: var(--testo-tenue); }
+.eroe-inizia { margin-top: 4px; }
+.settimana-vuota { margin: 0; padding: 11px 13px; border-radius: 12px; background: var(--superficie-alta); font-size: 13.5px; color: var(--testo-tenue); }
+.elenco-esercizi > li { scroll-margin-top: 104px; }
 
 .in-corso {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -478,12 +487,17 @@ input[type='date'].campo { padding-right: 10px; }
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   border-bottom: 1px solid var(--bordo);
 }
-.testata-allenamento > div { min-width: 0; }
+.testata-allenamento > .pulsante-icona { margin-left: -6px; background: none; color: var(--accento-chiaro); }
+.testata-centro { flex: 1; min-width: 0; }
 .testata-allenamento h1 { font-size: 13px; font-weight: 600; color: var(--testo-tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .testata-dati { display: flex; align-items: baseline; gap: 10px; margin-top: 1px; font-size: 13px; }
+.testata-destra { flex: none; display: flex; flex-direction: column; align-items: flex-end; }
+.testata-serie { font-family: var(--numeri); font-size: 22px; font-weight: 600; line-height: 1; }
+.testata-serie small { font-size: 14px; font-weight: 500; color: var(--testo-tenue); margin-left: 1px; }
+.testata-destra .pulsante-testo { min-height: 30px; margin-bottom: -6px; font-size: 14px; }
 .testata-dati > span:first-child { font-family: var(--numeri); font-size: 34px; font-weight: 600; line-height: 1; }
 .barra-avanzamento { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: transparent; }
-.barra-avanzamento i { display: block; height: 100%; background: linear-gradient(90deg, #2f74db, #6aa5f6); border-radius: 0 3px 3px 0; box-shadow: 0 0 12px rgba(59, 134, 240, 0.7); transition: width 0.35s ease; }
+.barra-avanzamento i { display: block; height: 100%; background: linear-gradient(90deg, var(--accento), var(--positivo)); border-radius: 0 3px 3px 0; box-shadow: 0 0 12px rgba(59, 134, 240, 0.7); transition: width 0.35s ease; }
 
 .riscaldamento { padding: 4px 18px; }
 .elenco-esercizi { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -500,15 +514,15 @@ input[type='date'].campo { padding-right: 10px; }
 
 /* Griglia delle serie: numero | kg | rip | ✓ */
 .tabella-serie { display: flex; flex-direction: column; gap: 6px; }
-.riga-serie { display: grid; grid-template-columns: 34px 1fr 1fr 52px; align-items: center; gap: 8px; border-radius: 14px; }
-.senza-kg .riga-serie { grid-template-columns: 34px 1fr 52px; }
+.riga-serie { display: grid; grid-template-columns: 24px 1fr 1fr 50px; align-items: center; gap: 8px; border-radius: 14px; }
+.senza-kg .riga-serie { grid-template-columns: 24px 1fr 50px; }
 .riga-serie.intestazione { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--testo-spento); }
 .riga-serie.intestazione span:first-child { text-align: center; }
 .riga-serie .campo { min-height: 50px; text-align: center; font-family: var(--numeri); font-size: 23px; font-weight: 600; padding: 0 6px; }
 .riga-serie .campo::placeholder { font-weight: 500; }
 .numero-serie { text-align: center; font-family: var(--numeri); font-size: 17px; font-weight: 600; color: var(--testo-tenue); }
 .spunta {
-  width: 52px; height: 50px;
+  width: 50px; height: 50px;
   display: grid; place-items: center;
   border: 1px solid var(--bordo-forte); border-radius: 14px;
   background: transparent; color: var(--testo-spento);
@@ -524,9 +538,79 @@ input[type='date'].campo { padding-right: 10px; }
 @keyframes conferma { 40% { transform: scale(1.12); } }
 .riga-serie.record { background: linear-gradient(90deg, rgba(233, 180, 76, 0.15), transparent 85%); }
 .riga-serie.record .numero-serie { color: var(--oro); font-size: 19px; }
-.esercizio-azioni { display: flex; justify-content: space-between; border-top: 1px solid var(--bordo); padding-top: 2px; }
-.esercizio-azioni .pulsante-testo { color: var(--testo-tenue); font-size: 13.5px; }
-.esercizio-azioni .pulsante-testo.pericolo { color: var(--errore); }
+/* Esercizio aperto: bordo blu, così si vede subito dove sei. */
+.esercizio.attivo { padding-bottom: 14px; border-color: rgba(106, 165, 246, 0.45); box-shadow: 0 0 0 4px rgba(59, 134, 240, 0.08), var(--ombra); }
+.esercizio-titolo .pulsante-icona { width: 36px; height: 36px; margin: -4px -4px -4px 0; }
+.esercizio-titolo .pulsante-icona svg { stroke-width: 3; }
+
+/* Esercizi chiusi: una riga sola. Verde se finito, tratteggiata se ancora da fare. */
+.riga-esercizio {
+  width: 100%; min-height: 50px;
+  display: flex; align-items: center; gap: 11px;
+  padding: 0 14px; border-radius: 15px; text-align: left; color: var(--testo-tenue);
+  border: 1px dashed var(--bordo-forte); background: none; font-size: 14.5px;
+  transition: transform 0.1s;
+}
+.riga-esercizio:active { transform: scale(0.985); }
+.riga-esercizio.finito { border: 1px solid var(--bordo); background: var(--superficie); color: var(--testo); }
+.riga-esercizio-segno {
+  flex: none; width: 24px; height: 24px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--superficie-alta);
+  font-family: var(--numeri); font-size: 14px; font-weight: 600; color: var(--testo-tenue);
+}
+.riga-esercizio.finito .riga-esercizio-segno { background: var(--positivo); color: #06140d; font-family: inherit; font-size: 13px; font-weight: 800; }
+.riga-esercizio-nome { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.riga-esercizio-nome b { color: var(--accento-chiaro); font-weight: 600; }
+.riga-esercizio-dati { flex: none; font-family: var(--numeri); font-size: 16px; font-weight: 600; color: var(--testo-tenue); }
+
+.tutto-fatto { display: flex; flex-direction: column; gap: 10px; border-color: rgba(60, 207, 145, 0.35); }
+.tutto-fatto .etichetta-sopra { color: var(--positivo); }
+.menu-esercizio { margin-top: 0; }
+
+/* Campo con − e + ai lati */
+.campo-passo {
+  min-width: 0; display: flex; align-items: center;
+  border: 1px solid var(--bordo); border-radius: 14px; background: var(--superficie-alta);
+  transition: border-color 0.15s, background 0.15s;
+}
+.campo-passo:focus-within { border-color: rgba(106, 165, 246, 0.55); }
+.campo-passo button {
+  flex: none; width: 30px; height: 50px; padding: 0;
+  border: 0; background: none; color: var(--testo-tenue); font-size: 20px; font-weight: 400;
+}
+.campo-passo button:active:not(:disabled) { color: var(--testo); }
+.riga-serie .campo-passo .campo { flex: 1; min-width: 0; padding: 0; border: 0; background: none; }
+.riga-serie.fatta .campo-passo { background: transparent; border-color: transparent; }
+.riga-serie.fatta .campo-passo button { visibility: hidden; }
+
+/* Timer di recupero: galleggia in basso, al posto della barra di navigazione. */
+.contenuto.senza-nav { padding-bottom: calc(env(safe-area-inset-bottom) + 120px); }
+.barra-recupero {
+  position: fixed; z-index: 10;
+  left: max(12px, calc(50% - 268px)); right: max(12px, calc(50% - 268px));
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 10px 10px 12px; border-radius: 22px;
+  background: rgba(22, 26, 33, 0.94); border: 1px solid var(--bordo-forte);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.9);
+  animation: entrata 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.barra-recupero.finito { border-color: rgba(60, 207, 145, 0.5); }
+.anello-recupero { flex: none; width: 46px; height: 46px; }
+.anello-recupero circle { fill: none; stroke-width: 5; }
+.anello-recupero .anello-pieno { stroke: var(--positivo); stroke-linecap: round; transition: stroke-dasharray 0.25s linear; }
+.recupero-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; margin-left: 2px; }
+.recupero-tempo { font-family: var(--numeri); font-size: 28px; font-weight: 600; line-height: 1; }
+.barra-recupero.finito .recupero-tempo, .barra-recupero.finito .etichetta-sopra { color: var(--positivo); }
+.recupero-pulsante {
+  flex: none; height: 40px; padding: 0 11px;
+  border: 0; border-radius: 12px; background: rgba(255, 255, 255, 0.07);
+  font-family: var(--numeri); font-size: 17px; font-weight: 600;
+}
+.recupero-pulsante.primario { padding: 0 14px; background: var(--accento); color: #fff; font-family: inherit; font-size: 14.5px; }
+.barra-recupero.finito .recupero-pulsante.primario { background: var(--positivo); color: #06140d; }
 
 .griglia-rpe { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .griglia-rpe button { min-height: 46px; border: 1px solid var(--bordo); border-radius: 12px; background: var(--superficie-alta); font-family: var(--numeri); font-size: 20px; font-weight: 600; transition: transform 0.1s; }
@@ -738,7 +822,8 @@ input[type='date'].campo { padding-right: 10px; }
   .nome-display.grande { font-size: 38px; }
   .cifra-display.enorme { font-size: 48px; }
   .tre-cifre dd { font-size: 30px; }
-  .riga-serie { grid-template-columns: 30px 1fr 1fr 48px; }
+  .riga-serie { grid-template-columns: 20px 1fr 1fr 46px; gap: 6px; }
+  .campo-passo button { width: 26px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
