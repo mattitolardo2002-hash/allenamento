@@ -114,7 +114,18 @@ export function BarraRecupero() {
     return () => clearTimeout(t);
   }, [finito]);
 
-  if (fine === null || restante < -AVVISO_MS / 1000) return null;
+  // Nessun recupero in corso: un pulsante per farlo partire a mano.
+  if (fine === null || restante < -AVVISO_MS / 1000) {
+    return (
+      <button type="button" className="avvia-recupero" onClick={() => avviaRecupero(totale)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="13" r="8" />
+          <path d="M12 9v4l2.5 2.5M9.5 2.5h5" />
+        </svg>
+        Recupero {durata(totale)}
+      </button>
+    );
+  }
 
   const r = 21;
   const giro = 2 * Math.PI * r;
